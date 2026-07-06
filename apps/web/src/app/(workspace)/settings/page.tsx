@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { api, STATUS_LABEL, type Leave, type LeaveType } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import AdminPanel from "./AdminPanel";
+import AccountCreate from "./AccountCreate";
+
+// 계정 생성만 가능한 관리자(연차 관리 등은 숨김) — 예: 신선중 대표
+const ACCOUNT_ONLY_ADMINS = ["thedudir@gmail.com"];
 
 const LEAVE_LABEL: Record<LeaveType, string> = {
   annual: "연차",
@@ -166,6 +170,28 @@ export default function SettingsPage() {
     }
   }
 
+  const accountOnly = !!user && ACCOUNT_ONLY_ADMINS.includes(user.email);
+
+  // 계정 생성 전용 관리자(신선중 대표) — 계정 추가만 노출
+  if (accountOnly) {
+    return (
+      <>
+        <div className="topbar">
+          <div>
+            <h1>Settings 설정</h1>
+            <div className="sub">Create account 계정 생성</div>
+          </div>
+        </div>
+        <div className="content" style={{ display: "grid", gap: 16 }}>
+          <div className="pill teal" style={{ width: "fit-content" }}>
+            👑 Admin · Account only 계정 생성 전용
+          </div>
+          <AccountCreate />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="topbar">
@@ -178,8 +204,9 @@ export default function SettingsPage() {
         {user?.isAdmin && (
           <div style={{ display: "grid", gap: 12 }}>
             <div className="pill teal" style={{ width: "fit-content" }}>
-              👑 관리자 모드
+              👑 관리자 모드 Admin
             </div>
+            <AccountCreate />
             <AdminPanel />
           </div>
         )}

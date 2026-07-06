@@ -14,8 +14,8 @@ import { api, STATUS_LABEL, type UserStatus } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 const NAV = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "업무풀" },
-  { href: "/activity", icon: UserRound, label: "내 활동" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Task Pool 업무풀" },
+  { href: "/activity", icon: UserRound, label: "My Activity 내 활동" },
 ] as const;
 
 const STATUSES: UserStatus[] = ["on", "away", "dnd", "off"];
@@ -96,18 +96,25 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <Link
-        href="/monitor"
-        className={`brand${pathname.startsWith("/monitor") ? " active" : ""}`}
-        title="현황판 — 팀 실시간 현황"
+        href={user?.isAdmin ? "/monitor" : "/activity"}
+        className={`brand${pathname.startsWith(user?.isAdmin ? "/monitor" : "/activity") ? " active" : ""}`}
+        title={user?.isAdmin ? "Status Board 현황판" : "My Activity 내 활동"}
         style={{ textDecoration: "none" }}
       >
         <div className="brand-mark" style={{ fontSize: 15 }}>TH</div>
       </Link>
 
-      {NAV.map((n) => item(n.href, n.icon, n.label))}
+      {/* 비관리자는 '내 활동'만 노출 */}
+      {NAV.filter((n) => user?.isAdmin || n.href === "/activity").map((n) =>
+        item(n.href, n.icon, n.label),
+      )}
 
-      <div className="nav-div" />
-      {item("/settings", Settings, "설정")}
+      {user?.isAdmin && (
+        <>
+          <div className="nav-div" />
+          {item("/settings", Settings, "Settings 설정")}
+        </>
+      )}
 
       <div className="status-box" style={{ position: "relative", marginTop: "auto" }}>
         <button
