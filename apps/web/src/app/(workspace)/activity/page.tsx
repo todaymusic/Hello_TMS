@@ -704,8 +704,8 @@ function ActivityInner() {
                 {currentTasks.length === 0 && (
                   <div style={{ color: "var(--text-3)", fontSize: 13 }}>
                     {isSelf
-                      ? "지금 진행 중인 업무가 없어요. 아래 “오늘의 업무”에서 체크하면 여기로 올라옵니다."
-                      : "지금 진행 중인 업무가 없어요."}
+                      ? "No task in progress 지금 진행 중인 업무가 없어요. 아래 “오늘의 업무”에서 체크하면 여기로 올라옵니다."
+                      : "No task in progress 지금 진행 중인 업무가 없어요."}
                   </div>
                 )}
                 {currentTasks.length > 0 && (
@@ -744,7 +744,7 @@ function ActivityInner() {
               </div>
               {soon.length > 0 && (
                 <div style={{ borderTop: "1px solid var(--border)", padding: "10px 14px 14px" }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, color: "#a16207" }}>⏳ 마감 임박</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, color: "#a16207" }}>⏳ Due Soon 마감 임박</div>
                   <div style={{ display: "grid", gap: 4 }}>
                     {soon.map(({ t, days }) => (
                       <div
@@ -791,7 +791,7 @@ function ActivityInner() {
                 )}
                 {!loading && todayList.length === 0 && (
                   <div style={{ padding: 18, color: "var(--text-3)", fontSize: 13 }}>
-                    {dayLabel} 담긴 업무가 없어요. 아래 <b>업무 리스트</b>에서 항목을 드래그해 여기로 담으세요.
+                    {dayLabel} 담긴 업무가 없어요 No tasks. 아래 <b>업무 리스트 Task List</b>에서 드래그해 담으세요.
                   </div>
                 )}
                 {todayList.map((it, idx) => {
@@ -917,7 +917,7 @@ function ActivityInner() {
               </div>
               {dayOffset === 0 && (
                 <div className="hint" style={{ padding: "0 18px 16px" }}>
-                  업무 리스트에서 <b>드래그</b>해 담기 · 손잡이(⠿)로 순서 변경 · <b>체크</b>하면 “현재 업무중”으로 올라갑니다
+Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(⠿)로 순서 변경 · <b>체크 check</b>하면 “현재 업무중 In Progress”으로 올라갑니다
                 </div>
               )}
               {/* 그날 업무 종료 때 생성된 데일리 평가 (오늘 포함) */}
@@ -960,7 +960,7 @@ function ActivityInner() {
                     <div style={{ display: "flex", gap: 6, paddingBottom: 10, alignItems: "center" }}>
                       <input
                         className="inp"
-                        placeholder="내 업무 제목"
+                        placeholder="내 업무 제목 (my task title)"
                         value={myTitle}
                         onChange={(e) => setMyTitle(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") void addMyTask(); }}
@@ -977,7 +977,7 @@ function ActivityInner() {
                   )}
                   <div style={{ display: "grid", gap: 6 }}>
                     {myBacklog.length === 0 && (
-                      <div style={{ color: "var(--text-3)", fontSize: 13 }}>담을 업무가 없어요. ＋추가로 만들어보세요.</div>
+                      <div style={{ color: "var(--text-3)", fontSize: 13 }}>No tasks 담을 업무가 없어요. ＋Add 추가로 만들어보세요.</div>
                     )}
                     {myBacklog.map((t) => (
                       <div
@@ -1036,8 +1036,8 @@ function ActivityInner() {
                           ) : !accepted ? (
                             isSelf ? (
                               <span style={{ display: "flex", gap: 4 }}>
-                                <button className="btn primary sm" onClick={() => accept(t.id)} disabled={busy === t.id}>수락</button>
-                                <button className="btn sm" style={{ color: "#b91c1c", borderColor: "#f0c9c9" }} onClick={() => { setRejectId(t.id); setRejectText(""); }} disabled={busy === t.id}>미수락</button>
+                                <button className="btn primary sm" onClick={() => accept(t.id)} disabled={busy === t.id}>Accept 수락</button>
+                                <button className="btn sm" style={{ color: "#b91c1c", borderColor: "#f0c9c9" }} onClick={() => { setRejectId(t.id); setRejectText(""); }} disabled={busy === t.id}>Reject 미수락</button>
                               </span>
                             ) : (
                               <span className="pill" style={{ background: "#fef9c3", color: "#a16207", fontSize: 10 }}>수락대기</span>
@@ -1055,11 +1055,11 @@ function ActivityInner() {
                                 value={rejectText}
                                 onChange={(e) => setRejectText(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === "Enter" && rejectText.trim()) void reject(t.id, rejectText); }}
-                                placeholder="미수락 사유 (부여자에게 전달)"
+                                placeholder="Reject reason 미수락 사유 (부여자에게 전달)"
                                 style={{ flex: 1, fontSize: 12.5 }}
                               />
-                              <button className="btn sm" style={{ color: "#fff", background: "#b91c1c", borderColor: "#b91c1c" }} onClick={() => reject(t.id, rejectText)} disabled={busy === t.id || !rejectText.trim()}>미수락 확정</button>
-                              <button className="btn sm" onClick={() => { setRejectId(null); setRejectText(""); }} disabled={busy === t.id}>취소</button>
+                              <button className="btn sm" style={{ color: "#fff", background: "#b91c1c", borderColor: "#b91c1c" }} onClick={() => reject(t.id, rejectText)} disabled={busy === t.id || !rejectText.trim()}>Confirm 미수락 확정</button>
+                              <button className="btn sm" onClick={() => { setRejectId(null); setRejectText(""); }} disabled={busy === t.id}>Cancel 취소</button>
                             </div>
                           ) : null}
                           {t.status === "rejected" && t.rejectReason ? (
@@ -1164,7 +1164,7 @@ function ActivityInner() {
               {isSelf && (
                 <div className="card">
                   <div className="panel-head">
-                    <div className="sec-title"><span className="em">📨</span> 멘션 &amp; 소통 피드</div>
+                    <div className="sec-title"><span className="em">📨</span> Mentions &amp; Feed 멘션 &amp; 소통 피드</div>
                     <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
                       <span className="count">새 알림 {notifs.filter((n) => !n.read).length}</span>
                       {notifs.some((n) => !n.read) && (
@@ -1173,7 +1173,7 @@ function ActivityInner() {
                     </span>
                   </div>
                   {!loading && notifs.length === 0 && (
-                    <div style={{ padding: 18, color: "var(--text-3)", fontSize: 13 }}>아직 알림이 없어요.</div>
+                    <div style={{ padding: 18, color: "var(--text-3)", fontSize: 13 }}>No notifications 아직 알림이 없어요.</div>
                   )}
                   {notifs.map((n) => {
                     const ic = FEED_IC[n.type] ?? FEED_IC.system;
@@ -1239,7 +1239,7 @@ function ActivityInner() {
                     if (memoTimer.current) clearTimeout(memoTimer.current);
                     void flushMemo();
                   }}
-                  placeholder="자유롭게 끄적여보세요… (서버 자동 저장)"
+                  placeholder="Jot anything… (auto-saved) 자유롭게 끄적여보세요… (서버 자동 저장)"
                   style={{
                     width: "100%",
                     minHeight: 160,
@@ -1280,12 +1280,12 @@ function ActivityInner() {
           >
             <div className="panel-head">
               <div className="sec-title">
-                <span className="em">✅</span> 업무 종료 — {endTask.title}
+                <span className="em">✅</span> End Task 업무 종료 — {endTask.title}
               </div>
             </div>
             {!endTask.reportRequired && !endTask.videoRequired && (
               <div className="field-hint" style={{ marginBottom: 8 }}>
-                이 업무는 산출물 요구가 없어요. 메모만 남기고 종료할 수 있습니다.
+No deliverable required. 이 업무는 산출물 요구가 없어요. 메모만 남기고 종료할 수 있습니다.
               </div>
             )}
             {endTask.reportRequired && (
@@ -1311,7 +1311,7 @@ function ActivityInner() {
               </div>
             )}
             <div className="assign-field">
-              <label>완료 메모 (선택)</label>
+              <label>Done memo 완료 메모 (선택)</label>
               <textarea
                 className="inp"
                 value={endNote}
@@ -1327,7 +1327,7 @@ function ActivityInner() {
                 style={{ flex: 1 }}
                 onClick={() => !endBusy && setEndTask(null)}
               >
-                취소
+                Cancel 취소
               </button>
               <button
                 className="btn primary"
@@ -1335,7 +1335,7 @@ function ActivityInner() {
                 onClick={submitEnd}
                 disabled={endBusy}
               >
-                {endBusy ? "처리 중…" : "종료 처리"}
+                {endBusy ? "Processing… 처리 중…" : "End 종료 처리"}
               </button>
             </div>
           </div>

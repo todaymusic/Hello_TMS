@@ -94,16 +94,16 @@ export default function EndDayModal({
         className="card"
         style={{ width: "100%", maxWidth: 560, padding: 22 }}
       >
-        <div className="sec-title mb16"><span className="em">🔚</span> 업무 종료 · 오늘 리포트</div>
+        <div className="sec-title mb16"><span className="em">🔚</span> End Day · Report 업무 종료 · 오늘 리포트</div>
         <div className="field-hint" style={{ marginBottom: 14 }}>
-          종료하면 진행 중 업무는 <b>중단</b>되고 미완료 업무는 <b>다음날로 이월</b>됩니다.
+          Ending pauses in-progress tasks & carries unfinished ones to tomorrow. 종료하면 진행 중 업무는 <b>중단</b>되고 미완료 업무는 <b>다음날로 이월</b>됩니다.
         </div>
 
         {/* 태스크 리포트 */}
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>📋 태스크 리포트 (미완료 {tasks.length})</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>📋 Task Report 태스크 리포트 (미완료 {tasks.length})</div>
         <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
           {tasks.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>미완료 업무가 없어요.</div>
+            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No unfinished tasks 미완료 업무가 없어요.</div>
           )}
           {tasks.map((t) => {
             const r = reports[t.id];
@@ -122,7 +122,7 @@ export default function EndDayModal({
                   className="inp"
                   value={r.memo}
                   onChange={(e) => setReport(t.id, { memo: e.target.value })}
-                  placeholder="업무 개요 · 오늘 한 일 (업무 메모에 저장)"
+                  placeholder="Summary · what you did today 업무 개요 · 오늘 한 일"
                   style={{ minHeight: 48, fontSize: 13 }}
                 />
               </div>
@@ -131,21 +131,21 @@ export default function EndDayModal({
         </div>
 
         {/* 데일리 리포트 */}
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>📝 데일리 리포트 (오늘 한줄평)</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>📝 Daily Report 데일리 리포트 (오늘 한줄평)</div>
         <textarea
           className="inp"
           value={daily}
           onChange={(e) => setDaily(e.target.value)}
-          placeholder="오늘 하루 업무를 한 줄로 정리해보세요. AI가 이 내용과 진행률·메모를 보고 평가해줍니다."
+          placeholder="Sum up your day in one line — AI reviews it. 오늘 하루 업무를 한 줄로 정리해보세요. AI가 평가해줍니다."
           style={{ minHeight: 56, fontSize: 13, marginBottom: 12 }}
         />
 
         {msg && <div className="field-hint" style={{ color: msg.includes("중…") ? "var(--text-2)" : "#dc2626", marginBottom: 8 }}>{msg}</div>}
 
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn" style={{ flex: 1 }} onClick={() => !busy && onClose()} disabled={busy}>취소</button>
+          <button className="btn" style={{ flex: 1 }} onClick={() => !busy && onClose()} disabled={busy}>Cancel 취소</button>
           <button className="btn primary" style={{ flex: 2 }} onClick={submit} disabled={busy}>
-            {busy ? "처리 중…" : "🤖 AI 평가 받고 종료"}
+            {busy ? "Processing… 처리 중…" : "🤖 Get AI review & end 평가 받고 종료"}
           </button>
         </div>
       </div>
