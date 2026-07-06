@@ -1,0 +1,817 @@
+<!-- 사내 업무 관리 플랫폼 — 클릭 가능한 프로토타입 (목업) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --ink: #1b1c22;
+    --ink-2: #24262e;
+    --ink-3: #2f323c;
+    --canvas: #f4f3ef;
+    --surface: #ffffff;
+    --surface-2: #faf9f6;
+    --border: #e6e3da;
+    --border-strong: #d8d4c8;
+    --text: #1b1c22;
+    --text-2: #6c685f;
+    --text-3: #9a958a;
+    --primary: #4f46e5;
+    --primary-soft: #ecebfb;
+    --primary-ink: #3730a3;
+    --teal: #0f766e;
+    --teal-soft: #d9f0ed;
+    --on: #16a34a;
+    --away: #eab308;
+    --dnd: #dc2626;
+    --off: #9ca3af;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(27,28,34,.04), 0 4px 16px rgba(27,28,34,.05);
+    --shadow-lg: 0 8px 30px rgba(27,28,34,.12);
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--canvas);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum";
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    height: 100vh;
+    min-height: 600px;
+  }
+
+  /* ───────── 사이드바 ───────── */
+  .sidebar {
+    background: var(--ink);
+    color: #c9c7c0;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 14px;
+    gap: 4px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px 16px;
+  }
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    display: grid; place-items: center;
+    font-weight: 800; color: #fff; font-size: 15px;
+    box-shadow: 0 2px 10px rgba(79,70,229,.5);
+  }
+  .brand-name { color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.2px; }
+  .brand-sub { color: #6f6d66; font-size: 11px; margin-top: 1px; }
+
+  .nav-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
+    color: #6a6860; text-transform: uppercase;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 10px; border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    color: #c9c7c0; transition: background .14s, color .14s;
+    user-select: none;
+  }
+  .nav-item .ic { width: 18px; text-align: center; font-size: 15px; opacity: .9; }
+  .nav-item:hover { background: var(--ink-2); color: #fff; }
+  .nav-item.active { background: var(--ink-3); color: #fff; }
+  .nav-item .badge {
+    margin-left: auto; background: var(--primary); color: #fff;
+    font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 20px;
+  }
+  .nav-div { height: 1px; background: #34363f; margin: 12px 6px; }
+
+  .status-box {
+    margin-top: auto;
+    background: var(--ink-2);
+    border: 1px solid #34363f;
+    border-radius: var(--radius);
+    padding: 11px 12px;
+    position: relative;
+    cursor: pointer;
+  }
+  .status-box .lbl { font-size: 10.5px; color: #807d75; margin-bottom: 5px; }
+  .status-now { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.on { background: var(--on); box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+  .dot.away { background: var(--away); box-shadow: 0 0 0 3px rgba(234,179,8,.18); }
+  .dot.dnd { background: var(--dnd); box-shadow: 0 0 0 3px rgba(220,38,38,.18); }
+  .dot.off { background: var(--off); }
+  .status-now .txt { color: #fff; font-size: 13.5px; font-weight: 600; }
+  .status-now .car { margin-left: auto; color: #6f6d66; font-size: 11px; }
+  .status-menu {
+    position: absolute; bottom: calc(100% + 8px); left: 0; right: 0;
+    background: var(--ink-3); border: 1px solid #3f424c; border-radius: var(--radius);
+    padding: 6px; display: none; box-shadow: var(--shadow-lg); z-index: 30;
+  }
+  .status-menu.open { display: block; }
+  .status-opt { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 7px; font-size: 13px; color: #d7d5ce; }
+  .status-opt:hover { background: var(--ink-2); color: #fff; }
+
+  /* ───────── 메인 ───────── */
+  .main { overflow-y: auto; height: 100vh; }
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(244,243,239,.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px; display: flex; align-items: center; gap: 14px;
+  }
+  .topbar h1 { font-size: 19px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar .sub { color: var(--text-2); font-size: 13px; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 9px; padding: 8px 12px; width: 260px; color: var(--text-3); font-size: 13px;
+  }
+  .search input { border: none; outline: none; background: none; font: inherit; color: var(--text); width: 100%; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .content { padding: 24px 28px 60px; }
+  .view { display: none; }
+  .view.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* 공용 카드 */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .sec-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 7px; }
+  .sec-title .em { font-size: 14px; }
+  .pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .pill.gray { background: #f0eee8; color: var(--text-2); }
+  .pill.indigo { background: var(--primary-soft); color: var(--primary-ink); }
+  .pill.teal { background: var(--teal-soft); color: var(--teal); }
+  .btn {
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border-strong); background: var(--surface);
+    color: var(--text); padding: 8px 14px; border-radius: 9px; transition: .14s;
+  }
+  .btn:hover { background: var(--surface-2); border-color: var(--text-3); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: #4338ca; }
+  .btn.sm { padding: 6px 11px; font-size: 12.5px; }
+
+  /* 진행률 바 */
+  .prog { height: 6px; border-radius: 6px; background: #eceae3; overflow: hidden; }
+  .prog > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #6366f1, #4f46e5); }
+  .prog.teal > i { background: linear-gradient(90deg,#14b8a6,#0f766e); }
+
+  /* ───── 대시보드 ───── */
+  .dash-grid { display: grid; grid-template-columns: 1fr 360px; gap: 18px; align-items: start; }
+  .dash-right { display: grid; gap: 18px; }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 16px 18px 12px; }
+  .panel-head .count { margin-left: auto; font-size: 12px; color: var(--text-3); }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--on); font-weight: 600; }
+  .live .ping { width: 7px; height: 7px; border-radius: 50%; background: var(--on); animation: ping 1.6s infinite; }
+  @keyframes ping { 0%{box-shadow:0 0 0 0 rgba(22,163,74,.4);} 70%{box-shadow:0 0 0 6px rgba(22,163,74,0);} 100%{box-shadow:0 0 0 0 rgba(22,163,74,0);} }
+
+  .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 18px 18px; }
+  .member {
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 13px; cursor: pointer; transition: .14s; background: var(--surface-2);
+  }
+  .member:hover { border-color: var(--primary); box-shadow: 0 3px 12px rgba(79,70,229,.1); transform: translateY(-1px); }
+  .member-top { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+  .member-av { position: relative; }
+  .member-av .dot { position: absolute; bottom: -1px; right: -1px; border: 2px solid var(--surface-2); width: 11px; height: 11px; }
+  .member-name { font-size: 13.5px; font-weight: 700; }
+  .member-dept { font-size: 11px; color: var(--text-3); }
+  .member-task { font-size: 12.5px; color: var(--text-2); margin-bottom: 8px; line-height: 1.4; }
+  .member-task b { color: var(--text); font-weight: 600; }
+  .member-foot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .member-foot .pct { font-size: 11px; font-weight: 700; color: var(--text-2); min-width: 30px; text-align: right; }
+
+  .assign-field { padding: 0 18px 14px; }
+  .assign-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .inp {
+    width: 100%; font: inherit; font-size: 13px; padding: 8px 11px;
+    border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); outline: none;
+  }
+  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border-strong); cursor: pointer; background: var(--surface); transition: .12s; }
+  .chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .prio-row { display: flex; gap: 6px; }
+  .prio { flex: 1; text-align: center; font-size: 12px; font-weight: 600; padding: 7px; border-radius: 8px; border: 1px solid var(--border-strong); cursor: pointer; }
+  .prio.on.urgent { background: #fde8e8; border-color: var(--dnd); color: var(--dnd); }
+  .prio.on.high { background: #fff3df; border-color: var(--away); color: #b45309; }
+
+  .status-presets { padding: 4px 18px 18px; display: grid; gap: 8px; }
+  .preset { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: .12s; }
+  .preset:hover { background: var(--surface-2); }
+  .preset.on { border-color: var(--primary); background: var(--primary-soft); }
+  .preset .nm { font-size: 13.5px; font-weight: 600; }
+  .preset .check { margin-left: auto; color: var(--primary); font-weight: 800; opacity: 0; }
+  .preset.on .check { opacity: 1; }
+
+  /* ───── 캘린더 ───── */
+  .cal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .cal-nav { display: flex; align-items: center; gap: 4px; }
+  .cal-nav button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; }
+  .cal-month { font-size: 17px; font-weight: 700; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cal-dow { background: var(--surface-2); padding: 9px; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+  .cal-cell { background: var(--surface); min-height: 92px; padding: 8px; cursor: pointer; transition: .12s; }
+  .cal-cell:hover { background: var(--surface-2); }
+  .cal-cell.muted { background: #faf9f6; }
+  .cal-cell.today { box-shadow: inset 0 0 0 2px var(--primary); }
+  .cal-num { font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .cal-cell.today .cal-num { color: var(--primary); font-weight: 800; }
+  .cal-ev { font-size: 11px; padding: 2px 6px; border-radius: 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev.done { background: #dcfce7; color: #15803d; }
+  .cal-ev.prog { background: var(--primary-soft); color: var(--primary-ink); }
+  .cal-ev.late { background: #fee2e2; color: #b91c1c; }
+
+  .gantt { margin-top: 18px; padding: 16px 18px; }
+  .gantt-row { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 14px; margin-bottom: 11px; }
+  .gantt-row .nm { font-size: 12.5px; font-weight: 600; }
+  .gantt-track { position: relative; height: 26px; background: #f3f1ea; border-radius: 7px; }
+  .gantt-bar { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; display: flex; align-items: center; padding: 0 9px; font-size: 11px; font-weight: 600; color: #fff; cursor: pointer; }
+
+  /* ───── 프로젝트 목록 ───── */
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .proj-card { padding: 18px; cursor: pointer; transition: .15s; }
+  .proj-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--primary); }
+  .proj-card .top { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .proj-card h3 { font-size: 15.5px; font-weight: 700; }
+  .proj-card .meta { font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
+  .proj-mem { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+  .stack { display: flex; }
+  .stack .avatar { width: 26px; height: 26px; font-size: 11px; border: 2px solid var(--surface); margin-left: -7px; }
+  .stack .avatar:first-child { margin-left: 0; }
+  .new-proj { border: 2px dashed var(--border-strong); background: transparent; box-shadow: none; display: grid; place-items: center; color: var(--text-3); font-size: 14px; font-weight: 600; min-height: 150px; }
+  .new-proj:hover { border-color: var(--primary); color: var(--primary); }
+  .archive-sec { margin-top: 28px; }
+  .archive-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); }
+
+  /* ───── 프로젝트 상세 ───── */
+  .detail-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; margin-bottom: 16px; font-weight: 600; }
+  .detail-back:hover { color: var(--primary); }
+  .pinned { padding: 20px 22px; margin-bottom: 18px; position: sticky; top: 70px; z-index: 10; }
+  .pinned-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .pinned h2 { font-size: 21px; font-weight: 800; letter-spacing: -.4px; }
+  .pinned .overview { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+  .pinned-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 28px; }
+  .field-lbl { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .field-val { font-size: 13.5px; font-weight: 600; }
+  .role-map { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-2); }
+  .role-map b { color: var(--text); }
+  .links { display: flex; flex-wrap: wrap; gap: 6px; }
+  .link-chip { font-size: 12px; padding: 4px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; color: var(--primary-ink); font-weight: 600; cursor: pointer; }
+
+  .detail-cols { display: grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start; }
+
+  .ai-card { padding: 16px 18px; margin-bottom: 16px; border-left: 3px solid var(--primary); background: linear-gradient(180deg, #f7f6ff, var(--surface)); }
+  .ai-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .ai-head .upd { margin-left: auto; font-size: 11px; color: var(--text-3); }
+  .ai-block { margin-bottom: 11px; }
+  .ai-block .h { font-size: 12px; font-weight: 700; color: var(--primary-ink); margin-bottom: 4px; }
+  .ai-block ul { margin-left: 16px; font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+
+  .thread { padding: 4px 0; }
+  .msg { display: flex; gap: 11px; padding: 12px 18px; }
+  .msg:hover { background: var(--surface-2); }
+  .msg-body { flex: 1; }
+  .msg-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .msg-name { font-size: 13.5px; font-weight: 700; }
+  .msg-time { font-size: 11px; color: var(--text-3); }
+  .msg-text { font-size: 13px; color: var(--text); line-height: 1.55; }
+  .msg-text .mention { color: var(--primary); font-weight: 600; background: var(--primary-soft); padding: 0 3px; border-radius: 4px; }
+  .code-blk { background: var(--ink); color: #e6e3da; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; padding: 10px 13px; border-radius: 8px; margin-top: 7px; white-space: pre; overflow-x: auto; }
+  .reactions { display: flex; gap: 6px; margin-top: 8px; }
+  .rx { font-size: 12px; padding: 2px 9px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); cursor: pointer; }
+  .rx.on { background: var(--primary-soft); border-color: var(--primary); }
+  .composer { display: flex; gap: 9px; padding: 14px 18px; border-top: 1px solid var(--border); }
+  .composer .inp { flex: 1; }
+
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kcol { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; }
+  .kcol-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 10px; padding: 2px 4px; }
+  .kcol-head .n { margin-left: auto; color: var(--text-3); font-weight: 600; }
+  .kcard { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 11px; margin-bottom: 8px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  .kcard:hover { border-color: var(--primary); }
+  .kcard .kt { font-size: 12.5px; font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
+  .kcard .kf { display: flex; align-items: center; gap: 6px; }
+  .kcard .kf .pri { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+  .pri.u { background: #fde8e8; color: var(--dnd); }
+  .pri.h { background: #fff3df; color: #b45309; }
+  .pri.m { background: #e7efff; color: #2563eb; }
+  .pri.l { background: #eef0f2; color: var(--text-2); }
+  .kcard .kf .dd { margin-left: auto; font-size: 10.5px; color: var(--text-3); }
+
+  /* ───── 내 활동 ───── */
+  .act-cols { display: grid; grid-template-columns: 1fr 380px; gap: 18px; align-items: start; }
+  .feed-group { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; padding: 14px 18px 6px; }
+  .feed-item { display: flex; gap: 11px; padding: 12px 18px; cursor: pointer; border-left: 2px solid transparent; }
+  .feed-item:hover { background: var(--surface-2); border-left-color: var(--primary); }
+  .feed-ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 14px; flex: none; }
+  .feed-ic.mention { background: var(--primary-soft); }
+  .feed-ic.task { background: var(--teal-soft); }
+  .feed-ic.sys { background: #fff3df; }
+  .feed-txt { font-size: 13px; line-height: 1.5; }
+  .feed-txt b { font-weight: 700; }
+  .feed-time { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+  .feed-item.unread { background: #fbfaff; }
+  .feed-item.unread::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-left: auto; align-self: center; flex: none; }
+
+  .timeline { padding: 16px 18px; }
+  .tl-row { display: grid; grid-template-columns: 48px 1fr; gap: 12px; min-height: 26px; }
+  .tl-time { font-size: 11px; color: var(--text-3); font-weight: 600; padding-top: 2px; }
+  .tl-track { border-left: 2px solid var(--border); padding: 0 0 14px 14px; position: relative; }
+  .tl-block { background: var(--primary-soft); border-left: 3px solid var(--primary); border-radius: 7px; padding: 8px 11px; cursor: grab; }
+  .tl-block.alt { background: var(--teal-soft); border-left-color: var(--teal); }
+  .tl-block.lunch { background: #fff3df; border-left-color: var(--away); }
+  .tl-block .bt { font-size: 12.5px; font-weight: 700; }
+  .tl-block .bs { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+  .tl-empty { height: 8px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 16px 18px; }
+  .stat { text-align: center; padding: 14px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .stat .num { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+  .stat .num.done { color: var(--on); }
+  .stat .num.prog { color: var(--primary); }
+  .stat .num.wait { color: var(--text-3); }
+  .stat .lb { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+
+  .mt0 { margin-top: 0; } .mb16 { margin-bottom: 16px; }
+  .hint { font-size: 11.5px; color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+
+  @media (max-width: 1080px) {
+    .dash-grid, .detail-cols, .act-cols { grid-template-columns: 1fr; }
+    .pinned { position: static; }
+  }
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 64px 1fr; }
+    .brand-name, .brand-sub, .nav-item span:not(.ic):not(.badge), .nav-label, .status-box .lbl, .status-now .txt, .status-now .car { display: none; }
+    .nav-item { justify-content: center; }
+    .search { width: 160px; }
+    .kanban { grid-template-columns: 1fr 1fr; }
+    .pinned-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<div class="app">
+  <!-- ════════ 사이드바 ════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">T</div>
+      <div>
+        <div class="brand-name">TMS</div>
+        <div class="brand-sub">디자인팀 워크스페이스</div>
+      </div>
+    </div>
+
+    <div class="nav-label">워크스페이스</div>
+    <div class="nav-item active" data-view="dashboard"><span class="ic">🏠</span><span>대시보드</span></div>
+    <div class="nav-item" data-view="calendar"><span class="ic">📅</span><span>캘린더</span></div>
+    <div class="nav-item" data-view="projects"><span class="ic">📁</span><span>프로젝트</span></div>
+    <div class="nav-item" data-view="activity"><span class="ic">👤</span><span>내 활동</span><span class="badge">3</span></div>
+
+    <div class="nav-div"></div>
+    <div class="nav-item"><span class="ic">💬</span><span>DM / 채팅</span></div>
+    <div class="nav-item"><span class="ic">⚙️</span><span>설정</span></div>
+
+    <div class="status-box" id="statusBox">
+      <div class="lbl">내 상태</div>
+      <div class="status-now">
+        <span class="dot on" id="sbDot"></span>
+        <span class="txt" id="sbText">업무 중</span>
+        <span class="car">▾</span>
+      </div>
+      <div class="status-menu" id="statusMenu">
+        <div class="status-opt" data-st="on" data-label="업무 중"><span class="dot on"></span>업무 중</div>
+        <div class="status-opt" data-st="away" data-label="자리비움"><span class="dot away"></span>자리비움</div>
+        <div class="status-opt" data-st="dnd" data-label="방해금지"><span class="dot dnd"></span>방해금지</div>
+        <div class="status-opt" data-st="off" data-label="오프라인"><span class="dot off"></span>오프라인</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════ 메인 ════════ -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">대시보드</h1>
+        <div class="sub" id="pageSub">팀 실시간 현황 · 2026년 6월 26일 금요일</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search">🔍<input placeholder="태스크 · 프로젝트 검색" /></div>
+        <div class="avatar" style="background:#4f46e5">나</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ─────── 대시보드 ─────── -->
+      <section class="view active" id="view-dashboard">
+        <div class="dash-grid">
+          <!-- A. 실시간 업무현황 -->
+          <div class="card">
+            <div class="panel-head">
+              <div class="sec-title"><span class="em">🟢</span> 실시간 업무현황</div>
+              <span class="live"><span class="ping"></span>LIVE</span>
+              <span class="count">접속 5명</span>
+            </div>
+            <div class="team-grid" id="teamGrid"></div>
+          </div>
+
+          <div class="dash-right">
+            <!-- B. 업무 부여 -->
+            <div class="card">
+              <div class="panel-head"><div class="sec-title"><span class="em">📋</span> 업무 부여</div></div>
+              <div class="assign-field">
+                <label>담당자</label>
+                <div class="chips">
+                  <span class="chip on">김서연</span><span class="chip">이준호</span>
+                  <span class="chip">박민지</span><span class="chip">최우진</span>
+                </div>
+              </div>
+              <div class="assign-field"><label>태스크 제목</label><input class="inp" placeholder="예: 랜딩 페이지 반응형 작업" /></div>
+              <div class="assign-field" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label>마감일</label><input class="inp" type="date" value="2026-07-03" /></div>
+                <div><label>프로젝트</label>
+                  <select class="inp"><option>웹 리뉴얼</option><option>앱 v2.0</option><option>연결 안 함</option></select>
+                </div>
+              </div>
+              <div class="assign-field">
+                <label>우선순위</label>
+                <div class="prio-row">
+                  <div class="prio urgent">긴급</div><div class="prio high on">높음</div>
+                  <div class="prio">보통</div><div class="prio">낮음</div>
+                </div>
+              </div>
+              <div class="assign-field"><button class="btn primary" style="width:100%">태스크 부여하고 알림 보내기</button></div>
+            </div>
+
+            <!-- C. 내 상태 변경 -->
+            <div class="card">
+              <div class="panel-head"><div class="sec-title"><span class="em">🎯</span> 내 상태 변경</div></div>
+              <div class="status-presets" id="presets">
+                <div class="preset on" data-st="on" data-label="업무 중"><span class="dot on"></span><span class="nm">업무 중</span><span class="check">✓</span></div>
+                <div class="preset" data-st="away" data-label="자리비움"><span class="dot away"></span><span class="nm">자리비움</span><span class="check">✓</span></div>
+                <div class="preset" data-st="dnd" data-label="방해금지"><span class="dot dnd"></span><span class="nm">방해금지</span><span class="check">✓</span></div>
+                <div class="preset" data-st="off" data-label="오프라인"><span class="dot off"></span><span class="nm">오프라인</span><span class="check">✓</span></div>
+                <div style="padding-top:4px"><input class="inp" placeholder="커스텀 상태 메시지 (예: 회의 중 3시까지)" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────── 캘린더 ─────── -->
+      <section class="view" id="view-calendar">
+        <div class="cal-head">
+          <div class="cal-nav"><button>◀</button><button>▶</button></div>
+          <div class="cal-month">2026년 6월</div>
+          <div style="margin-left:auto" class="search">🔍<input placeholder="이전 태스크 검색 (담당자·상태·기간)" style="width:240px" /></div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+
+        <div class="card gantt">
+          <div class="sec-title mb16"><span class="em">📊</span> 프로젝트 타임라인</div>
+          <div class="gantt-row">
+            <div class="nm">웹 리뉴얼</div>
+            <div class="gantt-track"><div class="gantt-bar" style="left:0;width:62%;background:#4f46e5" onclick="openProject()">6/1 – 6/20</div></div>
+          </div>
+          <div class="gantt-row">
+            <div class="nm">앱 v2.0</div>
+            <div class="gantt-track"><div class="gantt-bar" style="left:13%;width:80%;background:#0f766e">6/5 – 6/30</div></div>
+          </div>
+          <div class="gantt-row">
+            <div class="nm" style="color:var(--text-3)">레거시 마이그레이션</div>
+            <div class="gantt-track"><div class="gantt-bar" style="left:0;width:38%;background:#9ca3af">5/1 – 5/25 ✓</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────── 프로젝트 목록 ─────── -->
+      <section class="view" id="view-projects">
+        <div class="proj-grid">
+          <div class="card proj-card" onclick="openProject()">
+            <div class="top"><span class="dot on"></span><h3>웹 리뉴얼</h3><span class="pill indigo" style="margin-left:auto">진행중</span></div>
+            <div class="meta">2026.06.01 – 06.20 · 마감 D-3</div>
+            <div class="prog mb16"><i style="width:62%"></i></div>
+            <div class="proj-mem">
+              <div class="stack">
+                <div class="avatar" style="background:#4f46e5">김</div>
+                <div class="avatar" style="background:#0f766e">이</div>
+              </div>
+              <span style="font-size:12px;color:var(--text-2)">김서연 · 이준호</span>
+            </div>
+          </div>
+
+          <div class="card proj-card">
+            <div class="top"><span class="dot on"></span><h3>앱 v2.0</h3><span class="pill indigo" style="margin-left:auto">진행중</span></div>
+            <div class="meta">2026.06.05 – 06.30 · 마감 D-4</div>
+            <div class="prog teal mb16"><i style="width:45%"></i></div>
+            <div class="proj-mem">
+              <div class="stack">
+                <div class="avatar" style="background:#db2777">박</div>
+                <div class="avatar" style="background:#ea580c">최</div>
+              </div>
+              <span style="font-size:12px;color:var(--text-2)">박민지 · 최우진</span>
+            </div>
+          </div>
+
+          <div class="card proj-card new-proj">＋ 새 프로젝트</div>
+        </div>
+
+        <div class="archive-sec">
+          <div class="sec-title mb16"><span class="em">📦</span> 아카이브</div>
+          <div class="archive-bar">
+            <span style="font-size:14px">📦</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:600">레거시 마이그레이션</div>
+              <div style="font-size:12px;color:var(--text-3)">2026.05.01 – 05.25 · 완료</div>
+            </div>
+            <span class="pill gray">읽기 전용</span>
+            <button class="btn sm" style="margin-left:auto">PDF 리포트</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────── 프로젝트 상세 ─────── -->
+      <section class="view" id="view-detail">
+        <div class="detail-back" onclick="showView('projects')">← 프로젝트 목록으로</div>
+
+        <!-- 고정 상단 -->
+        <div class="card pinned">
+          <div class="pinned-top">
+            <div>
+              <h2>웹 리뉴얼</h2>
+              <div class="overview">코퍼레이트 웹사이트 전면 개편 — 브랜드 리프레시 및 반응형 전환</div>
+            </div>
+            <span class="pill indigo" style="margin-left:auto">📌 고정</span>
+          </div>
+          <div class="pinned-grid">
+            <div><div class="field-lbl">기간</div><div class="field-val">2026.06.01 – 06.20</div></div>
+            <div><div class="field-lbl">진행률</div>
+              <div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i style="width:62%"></i></div><b style="font-size:13px">62%</b></div>
+            </div>
+            <div><div class="field-lbl">담당자 맵핑</div>
+              <div class="role-map"><span>리드 · <b>김서연</b></span><span>디자인 · <b>김서연</b></span><span>개발 · <b>이준호</b></span></div>
+            </div>
+            <div style="grid-column:1 / -1"><div class="field-lbl">업무 설명</div>
+              <div class="field-val" style="font-weight:400;color:var(--text-2);font-size:13px;line-height:1.6">메인·서브 페이지 14종 리디자인, 디자인 시스템 토큰화, Next.js 마이그레이션. 6/20 내부 QA 후 7월 초 배포 목표.</div>
+            </div>
+            <div style="grid-column:1 / -1"><div class="field-lbl">관련 데이터</div>
+              <div class="links"><span class="link-chip">🎨 Figma 디자인</span><span class="link-chip">📄 기획서.pdf</span><span class="link-chip">🔌 API 명세서</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-cols">
+          <!-- 좌: AI 요약 + 스레드 -->
+          <div>
+            <div class="card ai-card">
+              <div class="ai-head">
+                <span class="pill teal">🤖 AI 소통 요약</span>
+                <span class="upd">마지막 갱신 · 오늘 09:00</span>
+                <button class="btn sm" id="resummBtn" style="margin-left:8px">지금 요약</button>
+              </div>
+              <div class="ai-block"><div class="h">1) 핵심 결정사항</div>
+                <ul><li>메인 히어로는 풀스크린 영상 대신 인터랙티브 일러스트로 확정</li><li>디자인 토큰은 Tailwind config로 단일화</li></ul>
+              </div>
+              <div class="ai-block"><div class="h">2) 진행 상황</div>
+                <ul><li>메인·소개 페이지 디자인 완료, 개발 착수 (62%)</li></ul>
+              </div>
+              <div class="ai-block"><div class="h">3) 미결 이슈 / 액션아이템</div>
+                <ul><li>모바일 GNB 동작 방식 미정 → <b>이준호</b> 6/27까지 시안</li><li>API 응답 스펙 확정 필요 → 백엔드팀 확인 대기</li></ul>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="panel-head"><div class="sec-title"><span class="em">💬</span> 커뮤니케이션</div><span class="count">메시지 24</span></div>
+              <div class="thread">
+                <div class="msg">
+                  <div class="avatar" style="background:#4f46e5">김</div>
+                  <div class="msg-body">
+                    <div class="msg-top"><span class="msg-name">김서연</span><span class="msg-time">오늘 09:42</span></div>
+                    <div class="msg-text">메인 히어로 일러스트 시안 올렸어요. <span class="mention">@이준호</span> 개발 들어가기 전에 인터랙션 한 번만 봐주세요!</div>
+                    <div class="reactions"><span class="rx on">👍 2</span><span class="rx">🎉 1</span></div>
+                  </div>
+                </div>
+                <div class="msg">
+                  <div class="avatar" style="background:#0f766e">이</div>
+                  <div class="msg-body">
+                    <div class="msg-top"><span class="msg-name">이준호</span><span class="msg-time">오늘 10:15</span></div>
+                    <div class="msg-text">좋아요. 스크롤 트리거는 이 패턴으로 갈게요.</div>
+                    <div class="code-blk">const reveal = useScrollReveal({
+  threshold: 0.2,
+  once: true,
+});</div>
+                  </div>
+                </div>
+                <div class="msg">
+                  <div class="avatar" style="background:#4f46e5">김</div>
+                  <div class="msg-body">
+                    <div class="msg-top"><span class="msg-name">김서연</span><span class="msg-time">오늘 10:31</span></div>
+                    <div class="msg-text">완벽 👍 모바일 GNB만 내일 시안 같이 정하시죠.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="composer">
+                <input class="inp" placeholder="메시지 입력…  @멘션 · 파일첨부 · 코드블록 지원" />
+                <button class="btn primary sm">전송</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우: 태스크 보드 -->
+          <div class="card" style="padding:16px 14px">
+            <div class="sec-title mb16" style="padding:0 4px"><span class="em">📋</span> 태스크 보드</div>
+            <div class="kanban">
+              <div class="kcol">
+                <div class="kcol-head">📥 할일 <span class="n">2</span></div>
+                <div class="kcard"><div class="kt">모바일 GNB 시안</div><div class="kf"><span class="pri h">높음</span><span class="dd">6/27</span></div></div>
+                <div class="kcard"><div class="kt">푸터 리디자인</div><div class="kf"><span class="pri l">낮음</span><span class="dd">6/30</span></div></div>
+              </div>
+              <div class="kcol">
+                <div class="kcol-head">🔄 진행중 <span class="n">1</span></div>
+                <div class="kcard"><div class="kt">메인 히어로 개발</div><div class="kf"><span class="pri u">긴급</span><span class="dd">6/26</span></div></div>
+              </div>
+              <div class="kcol">
+                <div class="kcol-head">👀 검토중 <span class="n">1</span></div>
+                <div class="kcard"><div class="kt">소개 페이지 QA</div><div class="kf"><span class="pri m">보통</span><span class="dd">6/28</span></div></div>
+              </div>
+              <div class="kcol">
+                <div class="kcol-head">✅ 완료 <span class="n">1</span></div>
+                <div class="kcard"><div class="kt">디자인 토큰 정리</div><div class="kf"><span class="pri m">보통</span><span class="dd">6/24</span></div></div>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:12px;padding:0 4px">↔ 카드를 드래그해 상태를 변경할 수 있어요</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────── 내 활동 ─────── -->
+      <section class="view" id="view-activity">
+        <div class="act-cols">
+          <!-- 좌: 피드 -->
+          <div class="card">
+            <div class="panel-head"><div class="sec-title"><span class="em">📨</span> 멘션 & 소통 피드</div><span class="count">새 알림 3</span></div>
+            <div class="feed-group">오늘</div>
+            <div class="feed-item unread" onclick="openProject()">
+              <div class="feed-ic mention">@</div>
+              <div><div class="feed-txt"><b>김서연</b>님이 회원님을 멘션했어요<br><span style="color:var(--text-2)">“@이준호 인터랙션 한 번만 봐주세요”</span></div><div class="feed-time">웹 리뉴얼 · 5분 전</div></div>
+            </div>
+            <div class="feed-item unread">
+              <div class="feed-ic task">📋</div>
+              <div><div class="feed-txt">새 태스크가 부여됐어요 — <b>모바일 GNB 시안</b></div><div class="feed-time">웹 리뉴얼 · 1시간 전</div></div>
+            </div>
+            <div class="feed-item unread">
+              <div class="feed-ic sys">⚠️</div>
+              <div><div class="feed-txt"><b>메인 히어로 개발</b> 마감이 오늘이에요</div><div class="feed-time">시스템 · 2시간 전</div></div>
+            </div>
+            <div class="feed-group">어제</div>
+            <div class="feed-item">
+              <div class="feed-ic task">✅</div>
+              <div><div class="feed-txt"><b>디자인 토큰 정리</b> 태스크가 완료 처리됐어요</div><div class="feed-time">웹 리뉴얼 · 어제 17:20</div></div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-ic mention">@</div>
+              <div><div class="feed-txt"><b>박민지</b>님이 앱 v2.0 스레드에서 회원님을 멘션했어요</div><div class="feed-time">앱 v2.0 · 어제 14:05</div></div>
+            </div>
+          </div>
+
+          <!-- 우: 타임라인 + 통계 -->
+          <div style="display:grid;gap:18px">
+            <div class="card">
+              <div class="panel-head"><div class="sec-title"><span class="em">📅</span> 내 스케줄 — 오늘</div></div>
+              <div class="timeline">
+                <div class="tl-row"><div class="tl-time">09:00</div><div class="tl-track"><div class="tl-block alt"><div class="bt">스탠드업 미팅</div><div class="bs">09:00 – 09:30</div></div></div></div>
+                <div class="tl-row"><div class="tl-time">10:00</div><div class="tl-track"><div class="tl-block"><div class="bt">프론트 리팩토링</div><div class="bs">10:00 – 12:00</div></div></div></div>
+                <div class="tl-row"><div class="tl-time">12:00</div><div class="tl-track"><div class="tl-block lunch"><div class="bt">점심</div><div class="bs">12:00 – 13:00</div></div></div></div>
+                <div class="tl-row"><div class="tl-time">14:00</div><div class="tl-track"><div class="tl-block alt"><div class="bt">코드 리뷰</div><div class="bs">14:00 – 15:00</div></div></div></div>
+                <div class="tl-row"><div class="tl-time">16:00</div><div class="tl-track"><div class="tl-block"><div class="bt">API 문서 작성</div><div class="bs">16:00 – 18:00</div></div></div></div>
+              </div>
+              <div class="hint" style="padding:0 18px 16px">↕ 블록을 드래그해 시간을 조정할 수 있어요</div>
+            </div>
+
+            <div class="card">
+              <div class="panel-head"><div class="sec-title"><span class="em">📊</span> 이번 주 통계</div></div>
+              <div class="stats-row">
+                <div class="stat"><div class="num done">8</div><div class="lb">완료</div></div>
+                <div class="stat"><div class="num prog">3</div><div class="lb">진행중</div></div>
+                <div class="stat"><div class="num wait">2</div><div class="lb">대기</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // ── 목업 데이터: 팀원 ──
+  const team = [
+    { name:'김서연', dept:'디자인 리드', color:'#4f46e5', st:'on', task:'메인 히어로 일러스트', proj:'웹 리뉴얼', pct:80 },
+    { name:'이준호', dept:'프론트엔드', color:'#0f766e', st:'on', task:'스크롤 인터랙션 개발', proj:'웹 리뉴얼', pct:55 },
+    { name:'박민지', dept:'프로덕트 디자인', color:'#db2777', st:'away', task:'앱 온보딩 플로우', proj:'앱 v2.0', pct:40 },
+    { name:'최우진', dept:'백엔드', color:'#ea580c', st:'dnd', task:'결제 API 리팩토링', proj:'앱 v2.0', pct:65 },
+    { name:'정하늘', dept:'QA', color:'#0891b2', st:'on', task:'회귀 테스트 작성', proj:'앱 v2.0', pct:30 },
+    { name:'한지우', dept:'기획', color:'#7c3aed', st:'off', task:'2분기 회고 정리', proj:'—', pct:100 },
+  ];
+  const stLabel = { on:'업무중', away:'자리비움', dnd:'방해금지', off:'오프라인' };
+  document.getElementById('teamGrid').innerHTML = team.map(m => `
+    <div class="member">
+      <div class="member-top">
+        <div class="member-av">
+          <div class="avatar" style="background:${m.color};width:36px;height:36px">${m.name[0]}</div>
+          <span class="dot ${m.st}"></span>
+        </div>
+        <div><div class="member-name">${m.name}</div><div class="member-dept">${m.dept}</div></div>
+        <span class="pill gray" style="margin-left:auto">${m.proj}</span>
+      </div>
+      <div class="member-task">${m.st==='off' ? '오프라인' : '진행중 · '}<b>${m.st==='off'?'':m.task}</b></div>
+      <div class="member-foot">
+        <div class="prog" style="flex:1"><i style="width:${m.pct}%"></i></div>
+        <span class="pct">${m.pct}%</span>
+      </div>
+    </div>`).join('');
+
+  // ── 캘린더 그리드 (2026년 6월) ──
+  const events = {
+    1:[['done','김:디자인 토큰 ✅'],['prog','박:온보딩 🔄']],
+    3:[['prog','이:리팩토링 📝']],
+    5:[['prog','최:API 작업']],
+    12:[['late','정:QA 지연 ⚠️']],
+    18:[['prog','김:QA 시작']],
+    20:[['done','웹 리뉴얼 마감']],
+    26:[['prog','이:히어로 개발']],
+  };
+  let cells = '';
+  const dows = ['월','화','수','목','금','토','일'];
+  dows.forEach(d => cells += `<div class="cal-dow">${d}</div>`);
+  // 2026-06-01 은 월요일 → 빈칸 0개
+  for (let d = 1; d <= 30; d++) {
+    const ev = (events[d]||[]).map(e => `<div class="cal-ev ${e[0]}">${e[1]}</div>`).join('');
+    cells += `<div class="cal-cell ${d===26?'today':''}"><div class="cal-num">${d}</div>${ev}</div>`;
+  }
+  // 30일 이후 칸 채우기 (월요일 시작 → 30일은 화요일, 나머지 5칸 muted)
+  for (let i = 0; i < 5; i++) cells += `<div class="cal-cell muted"></div>`;
+  document.getElementById('calGrid').innerHTML = cells;
+
+  // ── 뷰 전환 ──
+  const titles = {
+    dashboard:['대시보드','팀 실시간 현황 · 2026년 6월 26일 금요일'],
+    calendar:['캘린더','월별 업무 진행 현황 & 프로젝트 타임라인'],
+    projects:['프로젝트','활성 프로젝트 2 · 아카이브 1'],
+    detail:['프로젝트','웹 리뉴얼'],
+    activity:['내 활동','멘션·알림 피드 & 내 스케줄'],
+  };
+  function showView(v) {
+    document.querySelectorAll('.view').forEach(s => s.classList.remove('active'));
+    document.getElementById('view-' + v).classList.add('active');
+    document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.toggle('active', n.dataset.view === v));
+    if (titles[v]) { document.getElementById('pageTitle').textContent = titles[v][0]; document.getElementById('pageSub').textContent = titles[v][1]; }
+    document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function openProject() { showView('detail'); }
+  document.querySelectorAll('.nav-item[data-view]').forEach(n => n.addEventListener('click', () => showView(n.dataset.view)));
+
+  // ── 상태 드롭다운 ──
+  const sBox = document.getElementById('statusBox'), sMenu = document.getElementById('statusMenu');
+  sBox.addEventListener('click', e => { if (!e.target.closest('.status-menu')) sMenu.classList.toggle('open'); });
+  document.addEventListener('click', e => { if (!sBox.contains(e.target)) sMenu.classList.remove('open'); });
+  function setStatus(st, label) {
+    document.getElementById('sbDot').className = 'dot ' + st;
+    document.getElementById('sbText').textContent = label;
+    document.querySelectorAll('#presets .preset').forEach(p => p.classList.toggle('on', p.dataset.st === st));
+  }
+  document.querySelectorAll('.status-opt').forEach(o => o.addEventListener('click', () => { setStatus(o.dataset.st, o.dataset.label); sMenu.classList.remove('open'); }));
+  document.querySelectorAll('#presets .preset').forEach(p => p.addEventListener('click', () => setStatus(p.dataset.st, p.dataset.label)));
+
+  // ── 칩 / 우선순위 토글 ──
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('on')));
+  document.querySelectorAll('.prio').forEach(p => p.addEventListener('click', () => {
+    document.querySelectorAll('.prio').forEach(x => x.classList.remove('on'));
+    p.classList.add('on');
+  }));
+  document.querySelectorAll('.rx').forEach(r => r.addEventListener('click', () => r.classList.toggle('on')));
+
+  // ── "지금 요약" 인터랙션 ──
+  const rb = document.getElementById('resummBtn');
+  rb && rb.addEventListener('click', () => {
+    const o = rb.textContent; rb.textContent = '요약 중…'; rb.disabled = true;
+    setTimeout(() => {
+      rb.textContent = '✓ 갱신됨';
+      document.querySelector('.ai-head .upd').textContent = '마지막 갱신 · 방금';
+      setTimeout(() => { rb.textContent = o; rb.disabled = false; }, 1400);
+    }, 900);
+  });
+</script>

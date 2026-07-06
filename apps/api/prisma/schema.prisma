@@ -1,0 +1,359 @@
+// TMS 데이터 모델 — SPEC 4장 기준 (v1.3 반영: subCategory, reportRequired/videoRequired)
+// 용어: 담당자=owner, 참여자=participant, 부여자=assigner, 수행자=assignee
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────── enums ─────────
+enum UserStatus {
+  on // 업무 중
+  away // 자리비움
+  dnd // 방해금지
+  off // 오프라인
+}
+
+enum Category {
+  long // 롱 (긴 업무)
+  shorts // 쇼츠 (짧은 업무)
+  project // 프로젝트
+}
+
+enum Priority {
+  urgent // 긴급
+  high // 높음
+  medium // 보통
+  low // 낮음
+}
+
+enum TaskStatus {
+  todo // 할일
+  doing // 진행중
+  paused // 중단(잠시 멈춤)
+  review // 검토중
+  done // 완료
+  completed_pending // 완료(검수 대기)
+  rejected // 미수락(반려) — 부여자 재요청/취소 대기
+}
+
+enum ProjectStatus {
+  active // 진행중
+  archived // 아카이브
+}
+
+enum ProjectRole {
+  lead // 리드
+  design // 디자인
+  dev // 개발
+  etc // 기타
+}
+
+enum LeaveType {
+  annual // 연차 (-1)
+  half // 반차 (-0.5)
+  quarter // 반반차 (-0.25)
+  sick // 병가
+  etc // 기타
+}
+
+enum LeaveStatus {
+  requested
+  approved
+  rejected
+}
+
+// ───────── models ─────────
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String
+  password      String? // bcrypt 해시 (이메일+비번 로그인). 기존 행은 null 허용
+  isAdmin       Boolean    @default(false) // 슈퍼유저(관리자) 권한
+  leaveBalance  Float      @default(0) // 연차 잔여(일). 관리자가 기입, 승인 시 자동 차감
+  dept          String? // 부서
+  role          String? // 직책
+  avatarColor   String     @default("#4f46e5")
+  status        UserStatus @default(off)
+  statusMessage String?
+  lastSeenAt    DateTime? // 마지막 접속(하트비트) 시각 — 현황판 온라인/오프라인 판정
+  clockedOut    Boolean    @default(false) // 업무 종료(퇴근) 상태 — 현황판 표시
+  workStart     String? // 출근 시간 "HH:mm" (퇴근 알림용)
+  workEnd       String? // 퇴근 시간 "HH:mm"
+  scratchMemo   String? // 내 활동 개인 자유 메모(포스트잇) — 본인만, 자동저장, 서버 보관
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // 관계
+  ownedProjects     ProjectOwner[]
+  joinedProjects    ProjectParticipant[]
+  assignedTasks     Task[]               @relation("assigner")
+  receivedTasks     Task[]               @relation("assignee")
+  messages          Message[]
+  workLogs          WorkLog[]
+  attendances       Attendance[]
+  leaves            Leave[]
+  notifications     Notification[]
+  channelMemberships ChannelMember[]
+  channelMessages    ChannelMessage[]
+  scheduleBlocks    ScheduleBlock[]
+  dailyReports      DailyReport[]
+}
+
+// 데일리 리포트 / AI 평가 — 업무 종료 시 저장(사용자·날짜당 1개), 지난일 조회에 표시(서버 보관)
+model DailyReport {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  date      String // "YYYY-MM-DD" (KST 기준 종료일)
+  comment   String? // 본인 데일리 한줄평
+  review    String? // AI 데일리 평가
+  taskCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// 채팅 채널(방): dm(1:1) / group(다수) / broadcast(전체 공지)
+model Channel {
+  id        String   @id @default(cuid())
+  name      String? // 그룹·전체 방 이름 (1:1은 null → 상대 이름 표시)
+  type      String   @default("dm") // dm | group | broadcast
+  createdAt DateTime @default(now())
+
+  members  ChannelMember[]
+  messages ChannelMessage[]
+}
+
+model ChannelMember {
+  id         String    @id @default(cuid())
+  channel    Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId  String
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String
+  lastReadAt DateTime? // 이 시점 이후 메시지 = 안읽음
+  pinned     Boolean   @default(false) // 채널 목록 상단 고정(개인별)
+
+  @@unique([channelId, userId])
+}
+
+model ChannelMessage {
+  id        String          @id @default(cuid())
+  channel   Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String
+  user      User            @relation(fields: [userId], references: [id])
+  userId    String
+  content   String
+  pinned    Boolean         @default(false) // 📌 공지 고정
+  mentions  Json? // 멘션된 userId 배열
+  replyTo   ChannelMessage? @relation("reply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replyToId String?
+  replies   ChannelMessage[] @relation("reply")
+  createdAt DateTime        @default(now())
+
+  @@index([channelId, createdAt])
+}
+
+model Project {
+  id        String        @id @default(cuid())
+  name      String
+  overview  String? // 한 줄 개요
+  description String?     // 업무 설명
+  startDate DateTime?
+  endDate   DateTime?
+  status    ProjectStatus @default(active)
+  progress  Int           @default(0) // 0~100
+  aiSummary Json? // AI 소통 요약 (핵심결정/진행/미결)
+  links     Json? // 관련 데이터 링크 [{label, url}]
+  reportNotes Json? // 프로젝트 리포트 노트 {summary, issues, next} — 팀 공유·서버 보관
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  owners       ProjectOwner[]
+  participants ProjectParticipant[]
+  tasks        Task[]
+  messages     Message[]
+}
+
+// 담당자(owner) — 역할별 책임자
+model ProjectOwner {
+  id        String      @id @default(cuid())
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User        @relation(fields: [userId], references: [id])
+  userId    String
+  role      ProjectRole @default(etc)
+
+  @@unique([projectId, userId])
+}
+
+// 참여자(participant) — 협업 멤버
+model ProjectParticipant {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  category    Category // 대분류 (long/shorts/project)
+  subCategory String? // 소분류 (업무 영역: 디자인/개발/마케팅...)
+  priority    Priority   @default(medium)
+  status      TaskStatus @default(todo)
+
+  // 산출물 요구 (taskType = report/video/both/none 의 boolean 표현)
+  reportRequired Boolean @default(false)
+  videoRequired  Boolean @default(false)
+  reportLink     String?
+  videoLink      String?
+
+  // 설명 / AI
+  description     String? // 간략 메모
+  descriptionPrompt String? // AI 정리 프롬프트
+  aiDescriptionDoc  String? // AI 생성 업무설명 doc
+  statusMemo        String? // 진행 메모(전 직원 대시보드 공유)
+  reworkCount       Int     @default(0) // 재작업 횟수(#2,#3...)
+  reworkReason      String? // 최근 재작업 사유
+  estimateMinutes   Int?    // AI 예상 소요시간(분) — 상세설명 기반 자동 측정
+  grade             String? // 검수 등급: 우수/양호/보완
+  aiReview          String? // AI 완료 평가(캐시)
+
+  dueDate     DateTime?
+  plannedDate DateTime? // '오늘 하기'로 옮긴 날(오늘의 업무에 표시)
+  dayOrder    Int? // 오늘의 업무 수동 정렬 순서
+  acceptedAt  DateTime? // 요청받은 업무 수락 시각(수락해야 진행 가능)
+  rejectedAt  DateTime? // 미수락(반려) 시각
+  rejectReason String?  // 미수락 사유
+  startedAt   DateTime?
+  endedAt     DateTime?
+  progress    Int       @default(0)
+
+  // 부여자 / 수행자 / 프로젝트
+  assigner   User?   @relation("assigner", fields: [assignerId], references: [id])
+  assignerId String?
+  assignee   User?   @relation("assignee", fields: [assigneeId], references: [id])
+  assigneeId String?
+  project    Project? @relation(fields: [projectId], references: [id])
+  projectId  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  workLogs  WorkLog[]
+  scheduleBlocks ScheduleBlock[]
+}
+
+// 오늘 스케줄 계획 블록 (근무시간 타임라인에 업무/점심 배치)
+model ScheduleBlock {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  date      DateTime // 자정 기준 날짜
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String?
+  label     String? // taskId 없을 때(점심 등)
+  startMin  Int // 0~1439 (자정부터 분)
+  endMin    Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model WorkLog {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  task      Task?     @relation(fields: [taskId], references: [id])
+  taskId    String?
+  startedAt DateTime
+  endedAt   DateTime?
+  note      String?
+  createdAt DateTime  @default(now())
+}
+
+model Attendance {
+  id       String    @id @default(cuid())
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String
+  date     DateTime // 날짜(자정 기준)
+  checkIn  DateTime?
+  checkOut DateTime?
+
+  @@unique([userId, date])
+}
+
+model Leave {
+  id              String      @id @default(cuid())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          String
+  type            LeaveType   @default(annual)
+  startDate       DateTime
+  endDate         DateTime
+  reason          String?
+  status          LeaveStatus @default(requested)
+  cancelRequested Boolean     @default(false) // 승인된 휴가 취소 요청(관리자 확인 대기)
+  createdAt       DateTime    @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  content   String
+  mentions  Json? // 멘션된 userId 배열
+  reactions Json? // {emoji: [userId]}
+  createdAt DateTime @default(now())
+}
+
+// 회의 (구글밋 영상·트랜스크립트 기반)
+model Meeting {
+  id             String   @id @default(cuid())
+  title          String   @default("회의")
+  date           DateTime
+  driveFileId    String? // 구글드라이브 파일 ID(영상/트랜스크립트)
+  videoUrl       String? // 영상 링크
+  transcriptUrl  String? // 트랜스크립트 링크
+  transcriptText String? // 붙여넣은 트랜스크립트 원문(AI 요약 소스)
+  summary        String? // AI 회의 개요(마크다운)
+  dismissed      Boolean  @default(false) // 삭제됨(목록 숨김+재동기화 시 재등록 방지)
+  createdAt      DateTime @default(now())
+
+  @@index([date])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String // mention / task / system
+  content   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// 백그라운드 푸시 구독(기기별)
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
