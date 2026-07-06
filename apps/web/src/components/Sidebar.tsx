@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Calendar,
   LayoutDashboard,
@@ -18,7 +18,8 @@ const NAV = [
   { href: "/activity", icon: UserRound, label: "My Activity 내 활동" },
 ] as const;
 
-const STATUSES: UserStatus[] = ["on", "away", "dnd", "off"];
+// hellotms: 업무중 / 자리비움 / 오프라인만 (방해금지 제외)
+const STATUSES: UserStatus[] = ["on", "away", "off"];
 const DOT: Record<UserStatus, string> = {
   on: "#22c55e",
   away: "#f59e0b",
@@ -30,13 +31,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout, refresh } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [saving, setSaving] = useState(false);
-
   const status = user?.status ?? "off";
-  useEffect(() => {
-    setMsg(user?.statusMessage ?? "");
-  }, [user?.statusMessage]);
 
   async function changeStatus(s: UserStatus) {
     if (!user) return;
@@ -46,16 +41,6 @@ export default function Sidebar() {
       await refresh();
     } catch {
       /* noop */
-    }
-  }
-  async function saveMsg() {
-    if (!user) return;
-    setSaving(true);
-    try {
-      await api.patch(`/users/${user.id}`, { statusMessage: msg.trim() });
-      await refresh();
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -179,19 +164,12 @@ export default function Sidebar() {
                 {status === s && <span style={{ marginLeft: "auto" }}>✓</span>}
               </div>
             ))}
-            <div style={{ borderTop: "1px solid var(--border)", padding: "8px 10px" }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>커스텀 상태</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input className="inp" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="예: 회의 중" style={{ flex: 1, fontSize: 12, padding: "4px 8px" }} />
-                <button className="btn sm" onClick={saveMsg} disabled={saving}>{saving ? "…" : "저장"}</button>
-              </div>
-            </div>
             <div
               className="status-opt"
               style={{ display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid var(--border)", padding: "9px 10px", color: "#dc2626", cursor: "pointer", fontSize: 13 }}
               onClick={() => logout()}
             >
-              <LogOut size={16} /> 로그아웃
+              <LogOut size={16} /> Logout 로그아웃
             </div>
           </div>
         )}

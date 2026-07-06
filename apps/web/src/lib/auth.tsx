@@ -78,9 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { email, password },
     );
     localStorage.setItem("tms_token", res.accessToken);
-    localStorage.setItem("tms_user", JSON.stringify(res.user));
     document.cookie = `tms_token=${res.accessToken}; path=/; max-age=${COOKIE_MAXAGE}; samesite=lax`;
-    setUser(res.user);
+    // 로그인 시 자동으로 '업무중(온라인)' 상태로
+    const onUser = { ...res.user, status: "on" as const };
+    localStorage.setItem("tms_user", JSON.stringify(onUser));
+    setUser(onUser);
+    api.patch(`/users/${res.user.id}`, { status: "on" }).catch(() => {});
   }
 
   async function refresh() {

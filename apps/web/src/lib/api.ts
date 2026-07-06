@@ -260,8 +260,8 @@ export function progressColor(pct: number): string {
 }
 
 export const STATUS_LABEL: Record<UserStatus, string> = {
-  on: '업무 중',
-  away: '자리비움',
-  dnd: '방해금지',
-  off: '오프라인',
+  on: 'Working 업무중',
+  away: 'Away 자리비움',
+  dnd: 'DND 방해금지',
+  off: 'Offline 오프라인',
 };
