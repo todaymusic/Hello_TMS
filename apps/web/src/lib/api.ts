@@ -3,9 +3,9 @@
 
 const BASE =
   process.env.NEXT_PUBLIC_API_URL ??
-  // ⚠️ hellotms 전용. 반드시 Railway web 서비스의 NEXT_PUBLIC_API_URL 환경변수를
-  //    새 api 주소로 설정할 것(미설정 시 아래 placeholder로 요청 → 실패, 원본 tms로는 안 감).
-  'https://hellotms-api-REPLACE-ME.up.railway.app/api';
+  // hellotms는 기존 TMS 백엔드/DB를 그대로 공유(축소된 프론트만 별도).
+  // → 같은 데이터·같은 계정. 별도 백엔드로 분리하려면 NEXT_PUBLIC_API_URL로 덮어쓸 것.
+  'https://tms-production-6ba9.up.railway.app/api';
 
 export const API_BASE = BASE;
 
