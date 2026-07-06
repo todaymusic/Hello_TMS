@@ -621,7 +621,7 @@ function ActivityInner() {
           {isSelf && (
             <>
               <button className="btn sm" onClick={(e) => { e.stopPropagation(); pause(t.id); }} disabled={busy === t.id}>⏸ 일시정지</button>
-              <button className="btn primary sm" onClick={(e) => { e.stopPropagation(); openEnd(t); }} disabled={busy === t.id}>✓ 완료</button>
+              <button className="btn primary sm" onClick={(e) => { e.stopPropagation(); openEnd(t); }} disabled={busy === t.id}>✓ Done 완료</button>
             </>
           )}
         </div>
@@ -660,7 +660,7 @@ function ActivityInner() {
         {isSelf && (
           <div className="topbar-right">
             <button className="btn primary" onClick={() => setEndDayOpen(true)} title="오늘 업무 종료 · 리포트 작성">
-              🔚 업무 종료
+              🔚 End Day 업무 종료
             </button>
           </div>
         )}
@@ -773,7 +773,7 @@ function ActivityInner() {
               onDrop={() => { if (isSelf) void dropToToday(); }}
             >
               <div className="panel-head">
-                <div className="sec-title"><span className="em">✅</span> 오늘의 업무</div>
+                <div className="sec-title"><span className="em">✅</span> Today's Tasks 오늘의 업무</div>
                 <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                   <button className="btn sm" onClick={() => setDayOffset((d) => d - 1)}>◀</button>
                   <b style={{ fontSize: 13, minWidth: 64, textAlign: "center" }}>
@@ -906,7 +906,7 @@ function ActivityInner() {
                           <span className="pill" style={{ background: "#fef3c7", color: "#a16207", fontSize: 10 }}>진행중이던 업무</span>
                           {isSelf && (
                             <button className="btn sm" onClick={(e) => { e.stopPropagation(); openEnd(it); }} disabled={busy === it.id}>
-                              ✓ 완료
+                              ✓ Done 완료
                             </button>
                           )}
                         </>
@@ -950,7 +950,7 @@ function ActivityInner() {
                 {/* 🙋 나의 업무 */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div className="sec-title" style={{ fontSize: 14 }}><span className="em">🙋</span> 나의 업무</div>
+                    <div className="sec-title" style={{ fontSize: 14 }}><span className="em">🙋</span> My Tasks 나의 업무</div>
                     <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
                       {isSelf && <button className="btn sm" onClick={() => setMyAddOpen((o) => !o)}>＋ 추가</button>}
                       <span className="count">{myBacklog.length}</span>
@@ -972,7 +972,7 @@ function ActivityInner() {
                           <option key={p} value={p}>{PRI[p].label}</option>
                         ))}
                       </select>
-                      <button className="btn primary sm" onClick={addMyTask} disabled={busy === "myadd"}>추가</button>
+                      <button className="btn primary sm" onClick={addMyTask} disabled={busy === "myadd"}>Add 추가</button>
                     </div>
                   )}
                   <div style={{ display: "grid", gap: 6 }}>
@@ -1001,7 +1001,7 @@ function ActivityInner() {
                 {/* 📥 요청받은 업무 */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div className="sec-title" style={{ fontSize: 14 }}><span className="em">📥</span> 요청받은 업무</div>
+                    <div className="sec-title" style={{ fontSize: 14 }}><span className="em">📥</span> Requests 요청받은 업무</div>
                     <span className="count" style={{ marginLeft: "auto" }}>{recvBacklog.length}</span>
                   </div>
                   <div style={{ display: "grid", gap: 6 }}>
@@ -1085,7 +1085,7 @@ function ActivityInner() {
               {/* 📊 업무 통계 (월별 · 완료/진행중/대기 클릭 → 목록) */}
               <div className="card">
                 <div className="panel-head">
-                  <div className="sec-title"><span className="em">📊</span> 업무 통계</div>
+                  <div className="sec-title"><span className="em">📊</span> Stats 업무 통계</div>
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                     <button className="btn sm" onClick={() => setStatMonth((m) => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d; })}>◀</button>
                     <b style={{ fontSize: 13, minWidth: 64, textAlign: "center" }}>{statMonth.getFullYear()}.{statMonth.getMonth() + 1}</b>
@@ -1227,7 +1227,7 @@ function ActivityInner() {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#8a6d0b" }}>📌 메모</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#8a6d0b" }}>📌 Memo 메모</div>
                   <div style={{ fontSize: 11, color: memoStatus === "saved" ? "#16a34a" : "#a89545" }}>
                     {memoStatus === "saving" ? "저장 중…" : memoStatus === "saved" ? "저장됨 ✓" : ""}
                   </div>
