@@ -60,17 +60,17 @@ export default function LoginPage() {
               margin: "0 auto 10px",
             }}
           >
-            T
+            TH
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800 }}>TMS 로그인</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800 }}>HelloTMS Login 로그인</h1>
           <div style={{ color: "var(--text-3, #888)", fontSize: 13, marginTop: 4 }}>
-            사내 업무 관리 플랫폼
+            Work Management 사내 업무 관리
           </div>
         </div>
 
         <form onSubmit={submit} className="card" style={{ padding: 22 }}>
           <div className="assign-field">
-            <label>이메일</label>
+            <label>Email 이메일</label>
             <input
               className="inp"
               type="email"
@@ -81,7 +81,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="assign-field">
-            <label>비밀번호</label>
+            <label>Password 비밀번호</label>
             <input
               className="inp"
               type="password"
@@ -101,7 +101,7 @@ export default function LoginPage() {
             style={{ width: "100%" }}
             disabled={busy}
           >
-            {busy ? "로그인 중…" : "로그인"}
+            {busy ? "Signing in… 로그인 중…" : "Login 로그인"}
           </button>
         </form>
 

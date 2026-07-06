@@ -82,8 +82,8 @@ export default function MonitorPage() {
     <>
       <div className="topbar">
         <div>
-          <h1>현황판</h1>
-          <div className="sub">팀 실시간 업무 현황</div>
+          <h1>Status Board 현황판</h1>
+          <div className="sub">Team Live Status 팀 실시간 업무 현황</div>
         </div>
         <div className="topbar-right">
           <div className="search" style={{ position: "relative" }}>

@@ -170,8 +170,8 @@ export default function SettingsPage() {
     <>
       <div className="topbar">
         <div>
-          <h1>설정</h1>
-          <div className="sub">내 계정 · 비밀번호 · 휴가</div>
+          <h1>Settings 설정</h1>
+          <div className="sub">Account · Password · Leave 내 계정 · 비밀번호 · 휴가</div>
         </div>
       </div>
       <div className="content" style={{ display: "grid", gap: 16 }}>

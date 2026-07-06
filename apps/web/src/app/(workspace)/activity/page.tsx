@@ -650,7 +650,7 @@ function ActivityInner() {
     <>
       <div className="topbar">
         <div>
-          <h1>{isSelf ? "내 활동" : `${targetName || "팀원"}님의 활동`}</h1>
+          <h1>{isSelf ? "My Activity 내 활동" : `${targetName || "팀원"}님의 활동`}</h1>
           <div className="sub">
             {isSelf
               ? `${me?.name ?? ""} · 현재 업무 · 오늘의 업무 · 업무 리스트`

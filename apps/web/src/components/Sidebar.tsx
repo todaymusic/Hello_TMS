@@ -101,7 +101,7 @@ export default function Sidebar() {
         title="현황판 — 팀 실시간 현황"
         style={{ textDecoration: "none" }}
       >
-        <div className="brand-mark">T</div>
+        <div className="brand-mark" style={{ fontSize: 15 }}>TH</div>
       </Link>
 
       {NAV.map((n) => item(n.href, n.icon, n.label))}

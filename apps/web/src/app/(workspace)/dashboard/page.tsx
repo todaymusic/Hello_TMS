@@ -318,8 +318,8 @@ function DashboardInner() {
     <>
       <div className="topbar">
         <div>
-          <h1>업무 풀</h1>
-          <div className="sub">업무를 쌓아두고 담당자에게 배분 · 미지정은 풀에 대기</div>
+          <h1>Task Pool 업무 풀</h1>
+          <div className="sub">Task Pool · assign to owners 업무를 쌓아두고 담당자에게 배분 · 미지정은 풀에 대기</div>
         </div>
         <div className="topbar-right">
           <div className="avatar" style={{ background: me?.avatarColor ?? "#4f46e5" }}>

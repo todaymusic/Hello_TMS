@@ -6,7 +6,7 @@
   --canvas: #f4f3ef; --surface: #ffffff; --surface-2: #faf9f6;
   --border: #e6e3da; --border-strong: #d8d4c8;
   --text: #1b1c22; --text-2: #6c685f; --text-3: #9a958a;
-  --primary: #4f46e5; --primary-soft: #ecebfb; --primary-ink: #3730a3;
+  --primary: #0d9488; --primary-soft: #d1f3ee; --primary-ink: #0f766e;
   --teal: #0f766e; --teal-soft: #d9f0ed;
   --on: #16a34a; --away: #eab308; --dnd: #dc2626; --off: #9ca3af;
   --radius: 12px; --radius-sm: 8px;
@@ -30,7 +30,7 @@ body {
 /* 사이드바 — 아이콘 전용(축소) */
 .sidebar { background: var(--ink); color: #c9c7c0; display: flex; flex-direction: column; align-items: center; padding: 16px 8px; gap: 6px; }
 .brand { display: flex; align-items: center; justify-content: center; padding: 2px 0 14px; }
-.brand-mark { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg,#6366f1,#4f46e5); display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 18px; box-shadow: 0 2px 12px rgba(79,70,229,.5); }
+.brand-mark { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg,#14b8a6,#0d9488); display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 18px; box-shadow: 0 2px 12px rgba(13,148,136,.5); }
 .nav-item { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 13px; cursor: pointer; color: #b6b4ad; transition: background .14s, color .14s; user-select: none; text-decoration: none; }
 .nav-item:hover { background: var(--ink-2); color: #fff; }
 .nav-item.active { background: var(--ink-3); color: #fff; }
@@ -74,10 +74,10 @@ body {
 .btn { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); padding: 8px 14px; border-radius: 9px; transition: .14s; }
 .btn:hover { background: var(--surface-2); border-color: var(--text-3); }
 .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-.btn.primary:hover { background: #4338ca; }
+.btn.primary:hover { background: #0f766e; }
 .btn.sm { padding: 6px 11px; font-size: 12.5px; }
 .prog { height: 6px; border-radius: 6px; background: #eceae3; overflow: hidden; }
-.prog > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#6366f1,#4f46e5); }
+.prog > i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#14b8a6,#0d9488); }
 .prog.teal > i { background: linear-gradient(90deg,#14b8a6,#0f766e); }
 .mb16 { margin-bottom: 16px; }
 .hint { font-size: 11.5px; color: var(--text-3); display: flex; align-items: center; gap: 5px; }
@@ -93,7 +93,7 @@ body {
 
 .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 18px 18px; }
 .member { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px; cursor: pointer; transition: .14s; background: var(--surface-2); }
-.member:hover { border-color: var(--primary); box-shadow: 0 3px 12px rgba(79,70,229,.1); transform: translateY(-1px); }
+.member:hover { border-color: var(--primary); box-shadow: 0 3px 12px rgba(13,148,136,.1); transform: translateY(-1px); }
 .member-top { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
 .member-av { position: relative; }
 .member-av .dot { position: absolute; bottom: -1px; right: -1px; border: 2px solid var(--surface-2); width: 11px; height: 11px; }
@@ -166,7 +166,7 @@ textarea.inp { min-height: 64px; resize: vertical; line-height: 1.5; font-family
 .cal-cell.today .cal-num { color: var(--primary); font-weight: 800; }
 .cal-ev { font-size: 11px; padding: 2px 6px; border-radius: 5px; margin-bottom: 3px; white-space: normal; word-break: break-word; line-height: 1.35; }
 .cal-ev.done { background: #dcfce7; color: #15803d; }
-.cal-ev.prog { background: #4f46e5; color: #fff; font-weight: 600; }
+.cal-ev.prog { background: #0d9488; color: #fff; font-weight: 600; }
 .cal-ev.late { background: #fee2e2; color: #b91c1c; }
 .gantt { margin-top: 18px; padding: 16px 18px; }
 .gantt-row { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 14px; margin-bottom: 11px; }
