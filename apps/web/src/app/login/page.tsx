@@ -51,12 +51,12 @@ export default function LoginPage() {
               width: 48,
               height: 48,
               borderRadius: 12,
-              background: "#4f46e5",
+              background: "linear-gradient(135deg,#14b8a6,#0d9488)",
               color: "#fff",
               display: "grid",
               placeItems: "center",
               fontWeight: 800,
-              fontSize: 22,
+              fontSize: 20,
               margin: "0 auto 10px",
             }}
           >
