@@ -986,22 +986,35 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
                   <div style={{ color: "var(--text-3)", fontSize: 13 }}>None 해당 업무가 없어요.</div>
                 )}
                 {statList.map((t) => (
-                  <div key={t.id} onClick={() => setDetailId(t.id)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", padding: "7px 8px", border: "1px solid var(--border)", borderRadius: 8 }}>
-                    <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
-                    <span style={{ flex: 1, minWidth: 60 }}>
-                      {t.project && <span style={{ color: "var(--text-3)", fontSize: 11.5 }}>({t.project.name}) </span>}
-                      {t.title}
-                    </span>
-                    {statSel === "done" && t.endedAt && (
-                      <span style={{ fontSize: 11, color: "var(--text-3)" }}>{mdd(t.endedAt)}</span>
-                    )}
-                    {statSel === "overdue" && t.dueDate && (
-                      <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 700 }}>D+{Math.ceil((nowMs - new Date(t.dueDate).getTime()) / 86400000)} · {mdd(t.dueDate)}</span>
-                    )}
-                    {statSel === "rework" && (
-                      <span className="pill" style={{ background: "#ffedd5", color: "#c2410c", fontSize: 10 }}>Rework 재작업 #{t.reworkCount}</span>
-                    )}
-                    <b style={{ fontSize: 12, color: progressColor(t.progress) }}>{t.progress}%</b>
+                  <div
+                    key={t.id}
+                    onClick={() => setDetailId(t.id)}
+                    style={{
+                      cursor: "pointer",
+                      border: `1px solid ${statSel === "overdue" ? "#fecaca" : statSel === "rework" ? "#fed7aa" : "var(--border)"}`,
+                      background: statSel === "overdue" ? "#fef2f2" : statSel === "rework" ? "#fff7ed" : undefined,
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      display: "grid",
+                      gap: 4,
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
+                      {statSel === "rework" && (
+                        <span className="pill" style={{ background: "#ffedd5", color: "#c2410c", fontSize: 10, fontWeight: 700 }}>Rework 재작업 #{t.reworkCount}</span>
+                      )}
+                      <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 13 }}>{t.title}</span>
+                      <b style={{ fontSize: 12, color: progressColor(t.progress) }}>{t.progress}%</b>
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-3)", display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      {t.project && <span>📁 {t.project.name}</span>}
+                      {statSel === "done" && t.endedAt && <span>✅ {mdd(t.endedAt)} Done</span>}
+                      {statSel === "overdue" && t.dueDate && (
+                        <span style={{ color: "#dc2626", fontWeight: 700 }}>⚠️ D+{Math.ceil((nowMs - new Date(t.dueDate).getTime()) / 86400000)} · Due 마감 {mdd(t.dueDate)}</span>
+                      )}
+                      {statSel === "rework" && t.reworkReason && <span style={{ color: "#c2410c" }}>🔁 {t.reworkReason}</span>}
+                    </div>
                   </div>
                 ))}
               </div>
