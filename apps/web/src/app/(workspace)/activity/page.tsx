@@ -945,6 +945,64 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
               )}
             </div>
 
+            {/* 📊 업무 통계 (완료 업무 보기 포함) — 카드 클릭 → 상세 */}
+            <div className="card">
+              <div className="panel-head">
+                <div className="sec-title"><span className="em">📊</span> Stats 업무 통계</div>
+                <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                  <button className="btn sm" onClick={() => setStatMonth((m) => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d; })}>◀</button>
+                  <b style={{ fontSize: 13, minWidth: 64, textAlign: "center" }}>{statMonth.getFullYear()}.{statMonth.getMonth() + 1}</b>
+                  <button className="btn sm" onClick={() => setStatMonth((m) => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d; })}>▶</button>
+                </span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "6px 14px 10px" }}>
+                {([
+                  ["done", `${statMonth.getMonth() + 1}월 Done 완료`, doneInMonth.length, "#16a34a"],
+                  ["doing", "Doing 진행중", doingNow.length, "#2563eb"],
+                  ["todo", "Todo 대기", todoNow.length, "#eab308"],
+                ] as const).map(([k, label, n, color]) => (
+                  <button key={k} onClick={() => setStatSel(k)} style={{ border: `1px solid ${statSel === k ? color : "var(--border)"}`, background: statSel === k ? `${color}14` : "transparent", borderRadius: 10, padding: "10px 6px", cursor: "pointer", textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color }}>{n}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{label}</div>
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, padding: "0 14px 10px", flexWrap: "wrap" }}>
+                {([
+                  ["overdue", `⚠️ Overdue 마감초과 ${overdueNow.length}`, "#dc2626"],
+                  ["rework", `🔁 Rework 재요청 ${reworkTasks.length}`, "#c2410c"],
+                ] as const).map(([k, label, color]) => (
+                  <button key={k} onClick={() => setStatSel(k)} style={{ border: `1px solid ${statSel === k ? color : "var(--border)"}`, background: statSel === k ? `${color}14` : "transparent", borderRadius: 999, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, color }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding: "0 14px 14px", display: "grid", gap: 6 }}>
+                {statList.length === 0 && (
+                  <div style={{ color: "var(--text-3)", fontSize: 13 }}>None 해당 업무가 없어요.</div>
+                )}
+                {statList.map((t) => (
+                  <div key={t.id} onClick={() => setDetailId(t.id)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", padding: "7px 8px", border: "1px solid var(--border)", borderRadius: 8 }}>
+                    <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
+                    <span style={{ flex: 1, minWidth: 60 }}>
+                      {t.project && <span style={{ color: "var(--text-3)", fontSize: 11.5 }}>({t.project.name}) </span>}
+                      {t.title}
+                    </span>
+                    {statSel === "done" && t.endedAt && (
+                      <span style={{ fontSize: 11, color: "var(--text-3)" }}>{mdd(t.endedAt)}</span>
+                    )}
+                    {statSel === "overdue" && t.dueDate && (
+                      <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 700 }}>D+{Math.ceil((nowMs - new Date(t.dueDate).getTime()) / 86400000)} · {mdd(t.dueDate)}</span>
+                    )}
+                    {statSel === "rework" && (
+                      <span className="pill" style={{ background: "#ffedd5", color: "#c2410c", fontSize: 10 }}>Rework 재작업 #{t.reworkCount}</span>
+                    )}
+                    <b style={{ fontSize: 12, color: progressColor(t.progress) }}>{t.progress}%</b>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
 
           {/* ───────── 우: 포스트잇 메모 (상단 고정) ───────── */}
