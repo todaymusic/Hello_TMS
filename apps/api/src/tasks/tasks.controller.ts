@@ -34,6 +34,18 @@ export class TasksController {
     return this.tasks.dayReset(userId);
   }
 
+  // 삭제 기록 목록 (':id'보다 위에 둬야 'deletions'가 id로 안 잡힘)
+  @Get('deletions')
+  listDeletions() {
+    return this.tasks.listDeletions();
+  }
+
+  // 삭제 기록에서 복구
+  @Post('deletions/:id/restore')
+  restoreDeletion(@Param('id') id: string) {
+    return this.tasks.restoreDeletion(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tasks.findOne(id);
@@ -104,7 +116,7 @@ export class TasksController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasks.remove(id);
+  remove(@Param('id') id: string, @Query('userId') userId?: string) {
+    return this.tasks.remove(id, userId);
   }
 }

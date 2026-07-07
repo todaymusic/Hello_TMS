@@ -25,10 +25,11 @@ export default function LoginPage() {
     setErr(null);
     setBusy(true);
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      const u = await login(email, password);
+      // 비관리자는 '내 활동'만 → 대시보드 순간 노출 없이 바로 이동
+      router.push(u.isAdmin ? "/dashboard" : "/activity");
     } catch {
-      setErr("이메일 또는 비밀번호가 올바르지 않습니다");
+      setErr("Invalid email or password 이메일 또는 비밀번호가 올바르지 않습니다");
     } finally {
       setBusy(false);
     }
@@ -113,7 +114,7 @@ export default function LoginPage() {
             lineHeight: 1.7,
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>팀원 계정 (초기 비번: tms2026!)</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Team accounts (initial password: tms2026!) 팀원 계정 (초기 비번: tms2026!)</div>
           {DEMO.map((d) => (
             <span
               key={d.email}

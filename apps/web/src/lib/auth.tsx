@@ -12,7 +12,7 @@ import { api, type User } from "./api";
 type AuthCtx = {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
 };
@@ -20,7 +20,9 @@ type AuthCtx = {
 const Ctx = createContext<AuthCtx>({
   user: null,
   loading: true,
-  login: async () => {},
+  login: async () => {
+    throw new Error("no provider");
+  },
   logout: () => {},
   refresh: async () => {},
 });
@@ -62,9 +64,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // 접속 하트비트 — 현황판 온라인/오프라인 판정용 (탭 닫히면 멈춰서 곧 오프라인)
+    // + 자정 넘김 감지 — 탭을 밤새 열어둬도 하루 경계 리셋이 걸리게(전날 진행중 → 중단)
+    let lastDay = new Date().toDateString();
     const beat = () => {
-      if (localStorage.getItem("tms_token")) {
-        api.post("/auth/heartbeat", {}).catch(() => {});
+      if (!localStorage.getItem("tms_token")) return;
+      api.post("/auth/heartbeat", {}).catch(() => {});
+      const today = new Date().toDateString();
+      if (today !== lastDay) {
+        lastDay = today;
+        try {
+          const u = JSON.parse(localStorage.getItem("tms_user") || "null") as User | null;
+          if (u?.id) {
+            api
+              .post(`/tasks/day-reset?userId=${u.id}`, {})
+              .catch(() => {})
+              .finally(() => window.location.reload()); // 갱신된 상태로 화면 새로고침
+          }
+        } catch {
+          /* noop */
+        }
       }
     };
     beat();
@@ -84,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("tms_user", JSON.stringify(onUser));
     setUser(onUser);
     api.patch(`/users/${res.user.id}`, { status: "on" }).catch(() => {});
+    return onUser;
   }
 
   async function refresh() {

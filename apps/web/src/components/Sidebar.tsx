@@ -112,7 +112,7 @@ export default function Sidebar() {
             height: 44,
             margin: "0 auto",
             borderRadius: "50%",
-            background: user?.avatarColor ?? "#4f46e5",
+            background: user?.avatarColor ?? "#0d9488",
             color: "#fff",
             fontWeight: 700,
             border: "none",

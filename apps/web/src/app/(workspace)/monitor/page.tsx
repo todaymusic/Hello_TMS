@@ -24,7 +24,7 @@ export default function MonitorPage() {
       setTasks(t);
       setProjects(p);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "불러오기 실패");
+      setErr(e instanceof Error ? e.message : "Load failed 불러오기 실패");
     } finally {
       setLoading(false);
     }
@@ -50,14 +50,14 @@ export default function MonitorPage() {
     !!u.lastSeenAt && nowMs - new Date(u.lastSeenAt).getTime() < OFFLINE_MS;
   // 현황 우선순위: 오프라인(미접속) > 방해금지 > 자리비움(수동 상태) > 업무 종료(퇴근) > 진행중 > 대기
   const presenceOf = (u: User): { label: string; dot: string; sub?: string } => {
-    if (!isOnline(u)) return { label: "오프라인", dot: "#9ca3af" };
+    if (!isOnline(u)) return { label: "Offline 오프라인", dot: "#9ca3af" };
     const msg = u.statusMessage?.trim() || undefined;
-    if (u.status === "dnd") return { label: "방해금지", dot: "#ef4444", sub: msg };
-    if (u.status === "away") return { label: "자리비움", dot: "#eab308", sub: msg };
-    if (u.clockedOut) return { label: "업무 종료", dot: "#6366f1" };
+    if (u.status === "dnd") return { label: "DND 방해금지", dot: "#ef4444", sub: msg };
+    if (u.status === "away") return { label: "Away 자리비움", dot: "#eab308", sub: msg };
+    if (u.clockedOut) return { label: "Ended 업무 종료", dot: "#6366f1" };
     const task = doingByUser.get(u.id);
-    if (task) return { label: "진행중", dot: "#22c55e", sub: task.title };
-    return { label: "대기 중", dot: "#22c55e", sub: msg };
+    if (task) return { label: "Working 진행중", dot: "#22c55e", sub: task.title };
+    return { label: "Idle 대기 중", dot: "#22c55e", sub: msg };
   };
   const onlineCount = users.filter(isOnline).length;
 
@@ -89,7 +89,7 @@ export default function MonitorPage() {
           <div className="search" style={{ position: "relative" }}>
             🔍
             <input
-              placeholder="태스크 · 프로젝트 검색"
+              placeholder="Search tasks · projects 태스크 · 프로젝트 검색"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -111,7 +111,7 @@ export default function MonitorPage() {
                 }}
               >
                 {!hasResults && (
-                  <div style={{ padding: 12, fontSize: 13, color: "var(--text-3)" }}>검색 결과가 없어요.</div>
+                  <div style={{ padding: 12, fontSize: 13, color: "var(--text-3)" }}>No results 검색 결과가 없어요.</div>
                 )}
                 {search.projects.map((p) => (
                   <div
@@ -141,33 +141,33 @@ export default function MonitorPage() {
       <div className="content">
         {err && (
           <div className="card" style={{ color: "#dc2626", marginBottom: 16 }}>
-            API 오류: {err}
+            API error API 오류: {err}
           </div>
         )}
         <div className="card">
           <div className="panel-head">
             <div className="sec-title">
-              <span className="em">🟢</span> 실시간 업무현황
+              <span className="em">🟢</span> Live Status 실시간 업무현황
             </div>
             <span className="live">
               <span className="ping" />
               LIVE
             </span>
-            <span className="count">접속 {onlineCount}명</span>
+            <span className="count">Online {onlineCount} 접속 {onlineCount}명</span>
           </div>
           <div className="team-grid">
-            {loading && <div style={{ color: "var(--text-3)", fontSize: 13 }}>불러오는 중…</div>}
+            {loading && <div style={{ color: "var(--text-3)", fontSize: 13 }}>Loading… 불러오는 중…</div>}
             {!loading &&
               users.map((m) => {
                 const p = presenceOf(m);
-                const task = p.label === "진행중" ? doingByUser.get(m.id) : undefined;
+                const task = p.label === "Working 진행중" ? doingByUser.get(m.id) : undefined;
                 const pct = task?.progress ?? 0;
                 return (
                   <Link
                     className="member"
                     key={m.id}
                     href={`/activity?userId=${m.id}`}
-                    title={`${m.name}님의 활동 보기`}
+                    title={`View ${m.name}'s activity ${m.name}님의 활동 보기`}
                     style={{ cursor: "pointer", textDecoration: "none", color: "inherit" }}
                   >
                     <div className="member-top">

@@ -10,16 +10,16 @@ import AccountCreate from "./AccountCreate";
 const ACCOUNT_ONLY_ADMINS = ["thedudir@gmail.com"];
 
 const LEAVE_LABEL: Record<LeaveType, string> = {
-  annual: "연차",
-  half: "반차",
-  quarter: "반반차",
-  sick: "병가",
-  etc: "기타",
+  annual: "Annual 연차",
+  half: "Half 반차",
+  quarter: "Quarter 반반차",
+  sick: "Sick 병가",
+  etc: "Etc 기타",
 };
 const STATUS_KO = {
-  requested: "신청됨",
-  approved: "승인",
-  rejected: "반려",
+  requested: "Requested 신청됨",
+  approved: "Approved 승인",
+  rejected: "Rejected 반려",
 } as const;
 
 function fmt(d: string) {
@@ -56,9 +56,9 @@ export default function SettingsPage() {
         workEnd: wEnd || undefined,
       });
       await refresh();
-      setWMsg("✅ 근무 시간 저장됨");
+      setWMsg("✅ Work hours saved 근무 시간 저장됨");
     } catch (e) {
-      setWMsg(e instanceof Error ? e.message : "저장 실패");
+      setWMsg(e instanceof Error ? e.message : "Save failed 저장 실패");
     } finally {
       setWBusy(false);
     }
@@ -90,11 +90,11 @@ export default function SettingsPage() {
   async function changePassword() {
     setPwMsg(null);
     if (nw.length < 4) {
-      setPwMsg("새 비밀번호는 4자 이상이어야 합니다");
+      setPwMsg("New password must be at least 4 characters 새 비밀번호는 4자 이상이어야 합니다");
       return;
     }
     if (nw !== nw2) {
-      setPwMsg("새 비밀번호 확인이 일치하지 않습니다");
+      setPwMsg("New password confirmation does not match 새 비밀번호 확인이 일치하지 않습니다");
       return;
     }
     setPwBusy(true);
@@ -103,12 +103,12 @@ export default function SettingsPage() {
         currentPassword: cur,
         newPassword: nw,
       });
-      setPwMsg("✅ 비밀번호가 변경되었습니다");
+      setPwMsg("✅ Password changed 비밀번호가 변경되었습니다");
       setCur("");
       setNw("");
       setNw2("");
     } catch (e) {
-      setPwMsg(e instanceof Error ? e.message : "변경 실패");
+      setPwMsg(e instanceof Error ? e.message : "Change failed 변경 실패");
     } finally {
       setPwBusy(false);
     }
@@ -146,7 +146,7 @@ export default function SettingsPage() {
     setLvMsg(null);
     if (!user) return;
     if (!lvStart || !lvEnd) {
-      setLvMsg("시작일과 종료일을 입력하세요");
+      setLvMsg("Enter start and end date 시작일과 종료일을 입력하세요");
       return;
     }
     setLvBusy(true);
@@ -158,13 +158,13 @@ export default function SettingsPage() {
         endDate: lvEnd,
         reason: lvReason.trim() || undefined,
       });
-      setLvMsg("✅ 휴가를 신청했습니다");
+      setLvMsg("✅ Leave requested 휴가를 신청했습니다");
       setLvStart("");
       setLvEnd("");
       setLvReason("");
       await loadLeaves();
     } catch (e) {
-      setLvMsg(e instanceof Error ? e.message : "신청 실패");
+      setLvMsg(e instanceof Error ? e.message : "Request failed 신청 실패");
     } finally {
       setLvBusy(false);
     }
@@ -204,7 +204,7 @@ export default function SettingsPage() {
         {user?.isAdmin && (
           <div style={{ display: "grid", gap: 12 }}>
             <div className="pill teal" style={{ width: "fit-content" }}>
-              👑 관리자 모드 Admin
+              👑 Admin 관리자 모드
             </div>
             <AccountCreate />
             <AdminPanel />
@@ -214,33 +214,33 @@ export default function SettingsPage() {
         {/* 내 휴가 (잔여 + 신청 + 목록) */}
         <div className="card" style={{ padding: 22, maxWidth: 600 }}>
           <div className="sec-title mb16" style={{ display: "flex", alignItems: "center" }}>
-            <span className="em">🌴</span> 내 휴가
+            <span className="em">🌴</span> My Leave 내 휴가
             <span className="pill teal" style={{ marginLeft: "auto", fontSize: 13 }}>
-              남은 연차 {user?.leaveBalance ?? 0}일
+              Leave left 남은 연차 {user?.leaveBalance ?? 0}일
             </span>
           </div>
 
           <div className="assign-field" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label>종류</label>
+              <label>Type 종류</label>
               <select className="inp" value={lvType} onChange={(e) => setLvType(e.target.value as LeaveType)}>
-                <option value="annual">연차 (−1)</option>
-                <option value="half">반차 (−0.5)</option>
-                <option value="quarter">반반차 (−0.25)</option>
-                <option value="sick">병가</option>
-                <option value="etc">기타</option>
+                <option value="annual">Annual 연차 (−1)</option>
+                <option value="half">Half 반차 (−0.5)</option>
+                <option value="quarter">Quarter 반반차 (−0.25)</option>
+                <option value="sick">Sick 병가</option>
+                <option value="etc">Etc 기타</option>
               </select>
             </div>
             <div>
-              <label>사유 (선택)</label>
-              <input className="inp" value={lvReason} onChange={(e) => setLvReason(e.target.value)} placeholder="사유" />
+              <label>Reason (optional) 사유 (선택)</label>
+              <input className="inp" value={lvReason} onChange={(e) => setLvReason(e.target.value)} placeholder="Reason 사유" />
             </div>
             <div>
-              <label>시작일</label>
+              <label>Start 시작일</label>
               <input className="inp" type="date" value={lvStart} onChange={(e) => setLvStart(e.target.value)} />
             </div>
             <div>
-              <label>종료일</label>
+              <label>End 종료일</label>
               <input className="inp" type="date" value={lvEnd} onChange={(e) => setLvEnd(e.target.value)} />
             </div>
           </div>
@@ -250,15 +250,15 @@ export default function SettingsPage() {
             </div>
           )}
           <button className="btn primary" onClick={requestLeave} disabled={lvBusy}>
-            {lvBusy ? "신청 중…" : "휴가 신청"}
+            {lvBusy ? "Requesting… 신청 중…" : "Request Leave 휴가 신청"}
           </button>
           <div className="hint" style={{ marginTop: 6 }}>
-            관리자 승인 시 종류별로 잔여 연차에서 자동 차감됩니다.
+            On admin approval, the balance is auto-deducted by leave type. 관리자 승인 시 종류별로 잔여 연차에서 자동 차감됩니다.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
             {visibleLeaves.length === 0 && (
-              <div style={{ color: "var(--text-3)", fontSize: 13 }}>최근 3개월 내 휴가가 없습니다.</div>
+              <div style={{ color: "var(--text-3)", fontSize: 13 }}>No leave in the last 3 months. 최근 3개월 내 휴가가 없습니다.</div>
             )}
             {visibleLeaves.map((lv) => (
               <div
@@ -293,17 +293,17 @@ export default function SettingsPage() {
                   </span>
                   {lv.status === "requested" && (
                     <button className="btn sm" onClick={() => cancelLeave(lv.id)} disabled={lvBusy}>
-                      취소
+                      Cancel 취소
                     </button>
                   )}
                   {lv.status === "approved" &&
                     (lv.cancelRequested ? (
                       <span className="pill" style={{ background: "#fef9c3", color: "#a16207" }}>
-                        취소요청됨
+                        Cancel requested 취소요청됨
                       </span>
                     ) : (
                       <button className="btn sm" onClick={() => requestCancel(lv.id)} disabled={lvBusy}>
-                        취소 요청
+                        Request Cancel 취소 요청
                       </button>
                     ))}
                 </span>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
         {/* 내 계정 */}
         <div className="card" style={{ padding: 22, maxWidth: 600 }}>
           <div className="sec-title mb16">
-            <span className="em">👤</span> 내 계정
+            <span className="em">👤</span> My Account 내 계정
           </div>
           {user ? (
             <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
@@ -337,29 +337,29 @@ export default function SettingsPage() {
                 </span>
               </div>
               <button className="btn" style={{ marginTop: 6, color: "#dc2626", width: 120 }} onClick={logout}>
-                🚪 로그아웃
+                🚪 Logout 로그아웃
               </button>
             </div>
           ) : (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>불러오는 중…</div>
+            <div style={{ color: "var(--text-3)", fontSize: 13 }}>Loading… 불러오는 중…</div>
           )}
         </div>
 
         {/* 비밀번호 변경 */}
         <div className="card" style={{ padding: 22, maxWidth: 600 }}>
           <div className="sec-title mb16">
-            <span className="em">🔒</span> 비밀번호 변경
+            <span className="em">🔒</span> Change Password 비밀번호 변경
           </div>
           <div className="assign-field">
-            <label>현재 비밀번호</label>
+            <label>Current Password 현재 비밀번호</label>
             <input className="inp" type="password" value={cur} onChange={(e) => setCur(e.target.value)} />
           </div>
           <div className="assign-field">
-            <label>새 비밀번호</label>
+            <label>New Password 새 비밀번호</label>
             <input className="inp" type="password" value={nw} onChange={(e) => setNw(e.target.value)} />
           </div>
           <div className="assign-field">
-            <label>새 비밀번호 확인</label>
+            <label>Confirm New Password 새 비밀번호 확인</label>
             <input className="inp" type="password" value={nw2} onChange={(e) => setNw2(e.target.value)} />
           </div>
           {pwMsg && (
@@ -368,29 +368,29 @@ export default function SettingsPage() {
             </div>
           )}
           <button className="btn primary" onClick={changePassword} disabled={pwBusy}>
-            {pwBusy ? "변경 중…" : "비밀번호 변경"}
+            {pwBusy ? "Changing… 변경 중…" : "Change Password 비밀번호 변경"}
           </button>
         </div>
 
         {/* 근무 시간 (퇴근 알림) */}
         <div className="card" style={{ padding: 22, maxWidth: 600 }}>
           <div className="sec-title mb16">
-            <span className="em">🕘</span> 근무 시간
+            <span className="em">🕘</span> Work Hours 근무 시간
           </div>
           <div className="hint" style={{ marginBottom: 10 }}>
-            퇴근 시간 5분 전에 “진행률을 기입해주세요” 알림이 떠요.
+            5 minutes before clock-out, a “please log your progress” reminder appears. 퇴근 시간 5분 전에 “진행률을 기입해주세요” 알림이 떠요.
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
             <div className="assign-field" style={{ margin: 0 }}>
-              <label>출근</label>
+              <label>Clock In 출근</label>
               <input className="inp" type="time" value={wStart} onChange={(e) => setWStart(e.target.value)} />
             </div>
             <div className="assign-field" style={{ margin: 0 }}>
-              <label>퇴근</label>
+              <label>Clock Out 퇴근</label>
               <input className="inp" type="time" value={wEnd} onChange={(e) => setWEnd(e.target.value)} />
             </div>
             <button className="btn primary" onClick={saveWork} disabled={wBusy}>
-              {wBusy ? "저장 중…" : "저장"}
+              {wBusy ? "Saving… 저장 중…" : "Save 저장"}
             </button>
           </div>
           {wMsg && (

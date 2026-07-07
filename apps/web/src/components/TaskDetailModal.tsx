@@ -67,14 +67,21 @@ export default function TaskDetailModal({
     (!!me.isAdmin || (!!task?.assigner && me.id === task.assigner.id));
 
   async function remove() {
+    // 공유 DB라 삭제는 실제 TMS 데이터까지 영구 제거됨 — 되돌릴 수 없어 확인받는다.
+    if (
+      !window.confirm(
+        "Delete this task permanently? This also removes it from the shared TMS data and cannot be undone.\n이 업무를 영구 삭제할까요? 공유 TMS 데이터에서도 사라지며 되돌릴 수 없습니다.",
+      )
+    )
+      return;
     setBusy(true);
     setErr(null);
     try {
-      await api.del(`/tasks/${taskId}`);
+      await api.del(`/tasks/${taskId}?userId=${me?.id ?? ""}`);
       onDeleted?.(taskId);
       onClose();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "삭제 실패");
+      setErr(e instanceof Error ? e.message : "Failed to delete 삭제 실패");
       setBusy(false);
     }
   }

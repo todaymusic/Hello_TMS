@@ -9,9 +9,10 @@ export default function WorkspaceLayout({
 }) {
   return (
     <div className="app">
-      <AccessGuard />
       <Sidebar />
-      <main className="main">{children}</main>
+      <main className="main">
+        <AccessGuard>{children}</AccessGuard>
+      </main>
       <NotificationCenter />
     </div>
   );

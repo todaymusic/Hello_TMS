@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "HelloTMS",
-  description: "HelloTMS 워크스페이스",
+  description: "HelloTMS Workspace 워크스페이스",
 };
 
 export default function RootLayout({

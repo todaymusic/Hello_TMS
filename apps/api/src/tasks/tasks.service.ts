@@ -139,9 +139,63 @@ export class TasksService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  // 하드삭제 — 지우기 전에 TaskDeletion 로그에 스냅샷 저장(누가·언제·복구용).
+  async remove(id: string, actorId?: string) {
+    const task = await this.prisma.task.findUnique({ where: { id } });
+    if (!task) throw new NotFoundException('업무를 찾을 수 없습니다.');
+    let deletedByName: string | null = null;
+    if (actorId) {
+      const u = await this.prisma.user.findUnique({
+        where: { id: actorId },
+        select: { name: true },
+      });
+      deletedByName = u?.name ?? null;
+    }
+    await this.prisma.taskDeletion.create({
+      data: {
+        taskId: task.id,
+        title: task.title,
+        snapshot: JSON.parse(JSON.stringify(task)),
+        deletedById: actorId ?? null,
+        deletedByName,
+      },
+    });
     return this.prisma.task.delete({ where: { id } });
+  }
+
+  // 삭제 기록 목록(최근순) — 관리자 '삭제 기록' 화면용.
+  listDeletions() {
+    return this.prisma.taskDeletion.findMany({
+      orderBy: { deletedAt: 'desc' },
+      take: 300,
+    });
+  }
+
+  // 삭제 기록에서 업무 복구 — 스냅샷으로 원래 id 그대로 재생성 후 로그 제거.
+  async restoreDeletion(deletionId: string) {
+    const log = await this.prisma.taskDeletion.findUnique({
+      where: { id: deletionId },
+    });
+    if (!log) throw new NotFoundException('삭제 기록을 찾을 수 없습니다.');
+    const snap = { ...(log.snapshot as Record<string, unknown>) };
+    const [assigner, assignee, project] = await Promise.all([
+      snap.assignerId
+        ? this.prisma.user.findUnique({ where: { id: String(snap.assignerId) }, select: { id: true } })
+        : null,
+      snap.assigneeId
+        ? this.prisma.user.findUnique({ where: { id: String(snap.assigneeId) }, select: { id: true } })
+        : null,
+      snap.projectId
+        ? this.prisma.project.findUnique({ where: { id: String(snap.projectId) }, select: { id: true } })
+        : null,
+    ]);
+    if (!assigner) snap.assignerId = null;
+    if (!assignee) snap.assigneeId = null;
+    if (!project) snap.projectId = null;
+    delete snap.updatedAt;
+    const restored = await this.prisma.task.create({ data: snap as never });
+    await this.prisma.taskDeletion.delete({ where: { id: deletionId } });
+    return restored;
   }
 
   /**

@@ -70,11 +70,11 @@ const FEED_IC: Record<string, { cls: string; ic: string }> = {
 function ago(d: string): string {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분 전`;
+  if (m < 1) return "just now 방금";
+  if (m < 60) return `${m}m ago ${m}분 전`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  return `${Math.floor(h / 24)}일 전`;
+  if (h < 24) return `${h}h ago ${h}시간 전`;
+  return `${Math.floor(h / 24)}d ago ${Math.floor(h / 24)}일 전`;
 }
 
 function ActivityInner() {
@@ -93,6 +93,7 @@ function ActivityInner() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null); // 액션 실패 알림
   const [rejectId, setRejectId] = useState<string | null>(null); // 미수락 사유 입력 중인 업무
   const [rejectText, setRejectText] = useState("");
   // 업무 종료 산출물 입력 모달
@@ -171,7 +172,7 @@ function ActivityInner() {
         setTargetName(u?.name ?? "");
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "불러오기 실패");
+      setErr(e instanceof Error ? e.message : "Failed to load 불러오기 실패");
     } finally {
       setLoading(false);
     }
@@ -320,11 +321,19 @@ function ActivityInner() {
     }
   }
 
+  // 액션 실패 시 사용자에게 알림(4초 후 자동 사라짐)
+  function showErr(e: unknown, fallback: string) {
+    setToast(e instanceof Error ? `${fallback} — ${e.message}` : fallback);
+    setTimeout(() => setToast(null), 4000);
+  }
+
   async function start(id: string) {
     setBusy(id);
     try {
       await api.post(`/tasks/${id}/start`, {});
       await load();
+    } catch (e) {
+      showErr(e, "Failed to start 시작 실패");
     } finally {
       setBusy(null);
     }
@@ -334,6 +343,8 @@ function ActivityInner() {
     try {
       await api.post(`/tasks/${id}/pause`, { reason: reason?.trim() || undefined });
       await load();
+    } catch (e) {
+      showErr(e, "Failed to pause 일시정지 실패");
     } finally {
       setBusy(null);
     }
@@ -343,6 +354,8 @@ function ActivityInner() {
     try {
       await api.post(`/tasks/${id}/resume`, {});
       await load();
+    } catch (e) {
+      showErr(e, "Failed to resume 재개 실패");
     } finally {
       setBusy(null);
     }
@@ -364,6 +377,8 @@ function ActivityInner() {
       });
       setEndTask(null);
       await load();
+    } catch (e) {
+      showErr(e, "Failed to end 업무 종료 실패");
     } finally {
       setEndBusy(false);
     }
@@ -385,6 +400,8 @@ function ActivityInner() {
       setMyTitle("");
       setMyAddOpen(false);
       await load();
+    } catch (e) {
+      showErr(e, "Failed to add task 업무 추가 실패");
     } finally {
       setBusy(null);
     }
@@ -395,6 +412,8 @@ function ActivityInner() {
     try {
       await api.post(`/tasks/${id}/accept`, {});
       await load();
+    } catch (e) {
+      showErr(e, "Failed to accept 수락 실패");
     } finally {
       setBusy(null);
     }
@@ -407,6 +426,8 @@ function ActivityInner() {
       setRejectId(null);
       setRejectText("");
       await load();
+    } catch (e) {
+      showErr(e, "Failed to reject 미수락 처리 실패");
     } finally {
       setBusy(null);
     }
@@ -418,6 +439,8 @@ function ActivityInner() {
     try {
       await api.patch(`/tasks/${id}`, { plannedDate: dateISO ?? "" });
       await load();
+    } catch (e) {
+      showErr(e, "Failed to update 오늘의 업무 반영 실패");
     } finally {
       setBusy(null);
     }
@@ -456,14 +479,15 @@ function ActivityInner() {
     .filter((t) => stateOf(t) === "done" && endMonthKey(t) === statMonthKey)
     // 최근 완료(종료 시각)순 — 최신 완료가 위로
     .sort((a, b) => new Date(b.endedAt ?? 0).getTime() - new Date(a.endedAt ?? 0).getTime());
-  const doingNow = tasks.filter((t) => t.status === "doing");
-  const todoNow = tasks.filter((t) => t.status === "todo");
+  // 남이 요청했는데 아직 수락 안 한 업무 — 통계에서 제외(요청 목록에만 표시)
+  const isIncomingPending = (t: Task) => !!t.assigner && t.assigner.id !== targetId && !t.acceptedAt;
+  // 진행중 = doing + paused(일시정지도 진행 중 업무). 어제 doing이 dayReset로 paused 돼도 0으로 사라지지 않게.
+  const doingNow = tasks.filter((t) => stateOf(t) === "doing" && !isIncomingPending(t));
+  const todoNow = tasks.filter((t) => stateOf(t) === "todo" && !isIncomingPending(t));
   const nowMs = Date.now();
-  const dueMonthKey = (t: Task) =>
-    t.dueDate ? `${new Date(t.dueDate).getFullYear()}-${String(new Date(t.dueDate).getMonth() + 1).padStart(2, "0")}` : "";
-  // 마감초과 = 선택한 달에 마감이면서 아직 미완료·마감 지난 업무
+  // 마감초과 = 지금 기준 미완료·마감 지난 업무(월 선택과 무관하게 현재 밀린 것 전부)
   const overdueNow = tasks.filter(
-    (t) => stateOf(t) !== "done" && t.dueDate && new Date(t.dueDate).getTime() < nowMs && dueMonthKey(t) === statMonthKey,
+    (t) => stateOf(t) !== "done" && !isIncomingPending(t) && t.dueDate && new Date(t.dueDate).getTime() < nowMs,
   );
   const reworkTasks = tasks.filter((t) => (t.reworkCount ?? 0) > 0);
   const statList =
@@ -660,6 +684,29 @@ function ActivityInner() {
 
   return (
     <>
+      {toast && (
+        <div
+          onClick={() => setToast(null)}
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: 24,
+            transform: "translateX(-50%)",
+            zIndex: 100,
+            background: "#dc2626",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+            cursor: "pointer",
+            maxWidth: "90vw",
+          }}
+        >
+          ⚠️ {toast}
+        </div>
+      )}
       <div className="topbar">
         <div>
           <h1>{isSelf ? "My Activity 내 활동" : `${targetName || "Member 팀원"} · Activity 님의 활동`}</h1>
@@ -681,12 +728,12 @@ function ActivityInner() {
       <div className="content">
         {!isSelf && (
           <Link href="/dashboard" className="detail-back">
-            ← 대시보드로
+            ← Back to Dashboard 대시보드로
           </Link>
         )}
         {err && (
           <div className="card" style={{ color: "#dc2626", marginBottom: 16 }}>
-            API 오류: {err}
+            API error 오류: {err}
           </div>
         )}
 
@@ -964,20 +1011,12 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
                   ["done", `${statMonth.getMonth() + 1}월 Done 완료`, doneInMonth.length, "#16a34a"],
                   ["doing", "Doing 진행중", doingNow.length, "#2563eb"],
                   ["todo", "Todo 대기", todoNow.length, "#eab308"],
+                  ["overdue", "⚠️ Overdue 마감초과", overdueNow.length, "#dc2626"],
+                  ["rework", "🔁 Rework 재요청", reworkTasks.length, "#c2410c"],
                 ] as const).map(([k, label, n, color]) => (
                   <button key={k} onClick={() => setStatSel(k)} style={{ border: `1px solid ${statSel === k ? color : "var(--border)"}`, background: statSel === k ? `${color}14` : "transparent", borderRadius: 10, padding: "10px 6px", cursor: "pointer", textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color }}>{n}</div>
                     <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{label}</div>
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 8, padding: "0 14px 10px", flexWrap: "wrap" }}>
-                {([
-                  ["overdue", `⚠️ Overdue 마감초과 ${overdueNow.length}`, "#dc2626"],
-                  ["rework", `🔁 Rework 재요청 ${reworkTasks.length}`, "#c2410c"],
-                ] as const).map(([k, label, color]) => (
-                  <button key={k} onClick={() => setStatSel(k)} style={{ border: `1px solid ${statSel === k ? color : "var(--border)"}`, background: statSel === k ? `${color}14` : "transparent", borderRadius: 999, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, color }}>
-                    {label}
                   </button>
                 ))}
               </div>
@@ -1102,7 +1141,7 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
                   {/* 🚫 미수락·재요청 */}
                   {reqRejected.length > 0 && (
                     <div style={{ display: "grid", gap: 6 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#b91c1c" }}>🚫 Rejected 미수락 · {reqRejected.length}</div>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#b91c1c" }}>Rejected 미수락 · {reqRejected.length}</div>
                       {reqRejected.map((t) => (
                         <div key={t.id} style={{ fontSize: 12.5, padding: "6px 8px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-2)", display: "grid", gap: 3 }}>
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -1110,7 +1149,7 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
                             <span style={{ flex: 1, cursor: "pointer" }} onClick={() => setDetailId(t.id)}>{t.title}</span>
                             <span style={{ fontSize: 10, color: "#b91c1c", fontWeight: 700 }}>재요청 대기 re-req</span>
                           </div>
-                          {t.rejectReason && <div style={{ fontSize: 11, color: "#b91c1c", paddingLeft: 2 }}>🚫 {t.rejectReason}</div>}
+                          {t.rejectReason && <div style={{ fontSize: 11, color: "#b91c1c", paddingLeft: 2 }}>{t.rejectReason}</div>}
                         </div>
                       ))}
                     </div>

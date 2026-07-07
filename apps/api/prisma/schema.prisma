@@ -257,6 +257,19 @@ model Task {
   scheduleBlocks ScheduleBlock[]
 }
 
+// 업무 삭제 기록 — 하드삭제 전 Task 스냅샷을 보관(누가·언제·복구용). hellotms/TMS 공통 감사·복구.
+model TaskDeletion {
+  id            String   @id @default(cuid())
+  taskId        String // 삭제된 업무의 원래 id
+  title         String // 표시용 제목 스냅샷
+  snapshot      Json // 삭제 당시 Task 스칼라 전체(복구용)
+  deletedById   String? // 삭제자 userId(넘어온 경우)
+  deletedByName String? // 삭제자 이름 스냅샷
+  deletedAt     DateTime @default(now())
+
+  @@index([deletedAt])
+}
+
 // 오늘 스케줄 계획 블록 (근무시간 타임라인에 업무/점심 배치)
 model ScheduleBlock {
   id        String   @id @default(cuid())

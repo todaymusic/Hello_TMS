@@ -7,8 +7,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
-// 업무설명 doc 생성·대화 요약 용도 — 비용/속도 균형으로 Sonnet 사용(필요 시 opus-4-8로 상향)
-const MODEL = 'claude-sonnet-4-6';
+// 업무설명 doc 생성·대화 요약 용도 — 최신 Sonnet 5 사용(코딩/에이전트 성능↑, 가격 동일; 필요 시 opus-4-8로 상향)
+const MODEL = 'claude-sonnet-5';
 
 const DEFAULT_DOC_PROMPT = `당신은 업무 정의 어시스턴트입니다. 아래 간략 메모를 바탕으로 담당자가 바로 이해하고 착수할 수 있는 업무설명 문서를 한국어로 작성하세요.
 출력 형식(마크다운):

@@ -34,7 +34,7 @@ export default function EndDayModal({
 
   async function submit() {
     setBusy(true);
-    setMsg("저장 중…");
+    setMsg("Saving… 저장 중…");
     try {
       // 1) 태스크 리포트 저장 (진행률 + 개요→진행메모)
       await Promise.all(
@@ -51,7 +51,7 @@ export default function EndDayModal({
         tasks.filter((t) => t.status === "doing").map((t) => api.post(`/tasks/${t.id}/pause`, {})),
       );
       // 3) 데일리 평가 AI (한줄평 반영)
-      setMsg("AI 데일리 평가 생성 중…");
+      setMsg("Generating AI daily review… AI 데일리 평가 생성 중…");
       let review = "";
       try {
         const r = await api.post<{ review: string }>(
@@ -60,7 +60,7 @@ export default function EndDayModal({
         );
         review = r.review;
       } catch {
-        review = "(AI 평가를 생성하지 못했습니다)";
+        review = "(Couldn't generate AI review AI 평가를 생성하지 못했습니다)";
       }
       // 4) 퇴근(업무 종료) 상태 → 현황판에 '업무 종료'로 표시
       try {
@@ -79,7 +79,7 @@ export default function EndDayModal({
       }
       onDone();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "실패");
+      setMsg(e instanceof Error ? e.message : "Failed 실패");
       setBusy(false);
     }
   }
@@ -114,7 +114,7 @@ export default function EndDayModal({
                   {t.title}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: "var(--text-3)", minWidth: 50 }}>진행률</span>
+                  <span style={{ fontSize: 12, color: "var(--text-3)", minWidth: 50 }}>Progress 진행률</span>
                   <input type="range" min={0} max={100} step={5} value={r.progress} onChange={(e) => setReport(t.id, { progress: Number(e.target.value) })} style={{ flex: 1 }} />
                   <b style={{ fontSize: 13, minWidth: 40, textAlign: "right", color: progressColor(r.progress) }}>{r.progress}%</b>
                 </div>

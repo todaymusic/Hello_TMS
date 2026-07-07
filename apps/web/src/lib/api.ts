@@ -33,6 +33,15 @@ async function request<T>(
     cache: options?.cache ?? 'no-store',
   });
   if (!res.ok) {
+    // 401 = 토큰 만료/무효 → 세션 정리 후 로그인으로(무한 실패 상태 방지)
+    if (res.status === 401 && typeof window !== 'undefined') {
+      window.localStorage.removeItem('tms_token');
+      window.localStorage.removeItem('tms_user');
+      document.cookie = 'tms_token=; Path=/; Max-Age=0';
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
     const text = await res.text().catch(() => '');
     throw new Error(`API ${options?.method ?? 'GET'} ${path} → ${res.status} ${text}`);
   }
@@ -143,89 +152,15 @@ export type TaskDetail = Task & {
   workLogs?: WorkLog[];
 };
 
-// ───────── 채팅 ─────────
-export type ChatUser = { id: string; name: string; avatarColor: string; dept?: string | null };
-export type ChatChannel = {
+// 업무 삭제 기록 (GET /tasks/deletions) — 관리자 '삭제 기록' 화면·복구용
+export type TaskDeletion = {
   id: string;
-  name: string | null;
-  type: "dm" | "group" | "broadcast";
-  pinned?: boolean;
-  members: ChatUser[];
-  lastMessage: { content: string; createdAt: string; userName: string } | null;
-  lastAt: string;
-  unread: number;
-};
-export type ChatMessage = {
-  id: string;
-  content: string;
-  pinned: boolean;
-  mentions?: string[] | null;
-  replyTo?: { id: string; content: string; user: ChatUser } | null;
-  createdAt: string;
-  user: ChatUser;
-};
-
-export type ScheduleBlock = {
-  id: string;
-  taskId: string | null;
-  label: string | null;
-  startMin: number;
-  endMin: number;
-  task: { id: string; title: string; priority: Priority; status: TaskStatus } | null;
-};
-
-export type Meeting = {
-  id: string;
+  taskId: string;
   title: string;
-  date: string;
-  driveFileId: string | null;
-  videoUrl: string | null;
-  transcriptUrl: string | null;
-  transcriptText: string | null;
-  summary: string | null;
-  createdAt: string;
-};
-export function driveLink(fileId: string | null | undefined) {
-  return fileId ? `https://drive.google.com/file/d/${fileId}/view` : null;
-}
-
-export type ProjectLink = { label: string; url: string };
-
-export type TaskInProject = {
-  id: string;
-  title: string;
-  category: Category;
-  subCategory: string | null;
-  priority: Priority;
-  status: TaskStatus;
-  dueDate: string | null;
-  progress: number;
-  assignee: UserBrief | null;
-};
-
-export type ProjectDetail = {
-  id: string;
-  name: string;
-  overview: string | null;
-  description: string | null;
-  status: ProjectStatus;
-  progress: number;
-  startDate: string | null;
-  endDate: string | null;
-  links: ProjectLink[] | null;
-  aiSummary: unknown | null;
-  owners: Member[];
-  participants: Member[];
-  tasks: TaskInProject[];
-};
-
-export type Message = {
-  id: string;
-  content: string;
-  mentions: string[] | null;
-  reactions: Record<string, string[]> | null;
-  createdAt: string;
-  user: UserBrief;
+  snapshot: unknown;
+  deletedById: string | null;
+  deletedByName: string | null;
+  deletedAt: string;
 };
 
 export type LeaveType = "annual" | "half" | "quarter" | "sick" | "etc";

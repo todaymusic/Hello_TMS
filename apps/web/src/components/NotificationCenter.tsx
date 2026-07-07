@@ -33,11 +33,11 @@ function urlB64ToUint8(base64: string): Uint8Array {
 
 function ago(d: string) {
   const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분 전`;
+  if (m < 1) return "just now 방금";
+  if (m < 60) return `${m}m ago ${m}분 전`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  return `${Math.floor(h / 24)}일 전`;
+  if (h < 24) return `${h}h ago ${h}시간 전`;
+  return `${Math.floor(h / 24)}d ago ${Math.floor(h / 24)}일 전`;
 }
 
 export default function NotificationCenter() {
@@ -80,7 +80,7 @@ export default function NotificationCenter() {
           // 브라우저 OS 알림
           if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
             try {
-              const no = new Notification("TMS 알림", { body: n.content, tag: n.id });
+              const no = new Notification("HelloTMS", { body: n.content, tag: n.id });
               no.onclick = () => {
                 window.focus();
                 if (n.link) router.push(n.link);
@@ -157,7 +157,7 @@ export default function NotificationCenter() {
             style={{
               background: "var(--surface,#fff)",
               border: "1px solid var(--border)",
-              borderLeft: "4px solid var(--primary,#4f46e5)",
+              borderLeft: "4px solid var(--primary,#0d9488)",
               borderRadius: 10,
               boxShadow: "0 8px 26px rgba(0,0,0,0.16)",
               padding: "12px 14px",
@@ -177,7 +177,7 @@ export default function NotificationCenter() {
       {/* 플로팅 벨 */}
       <button
         onClick={() => setOpen((o) => !o)}
-        title="알림"
+        title="Notifications 알림"
         style={{
           position: "fixed",
           bottom: 22,
@@ -186,7 +186,7 @@ export default function NotificationCenter() {
           width: 52,
           height: 52,
           borderRadius: "50%",
-          background: "var(--primary,#4f46e5)",
+          background: "var(--primary,#0d9488)",
           color: "#fff",
           border: "none",
           cursor: "pointer",
@@ -241,16 +241,16 @@ export default function NotificationCenter() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", padding: "6px 8px 10px" }}>
-              <b style={{ fontSize: 14 }}>알림</b>
+              <b style={{ fontSize: 14 }}>Notifications 알림</b>
               <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                 {perm !== "granted" && (
-                  <button className="btn sm" onClick={enablePush}>🔔 OS 알림 켜기</button>
+                  <button className="btn sm" onClick={enablePush}>🔔 Enable OS notifications OS 알림 켜기</button>
                 )}
-                {unread > 0 && <button className="btn sm" onClick={markAll}>모두 읽음</button>}
+                {unread > 0 && <button className="btn sm" onClick={markAll}>Mark all read 모두 읽음</button>}
               </span>
             </div>
             {notifs.length === 0 && (
-              <div style={{ padding: 16, color: "var(--text-3)", fontSize: 13, textAlign: "center" }}>알림이 없어요.</div>
+              <div style={{ padding: 16, color: "var(--text-3)", fontSize: 13, textAlign: "center" }}>No notifications 알림이 없어요.</div>
             )}
             {notifs.slice(0, 30).map((n) => (
               <div
@@ -271,7 +271,7 @@ export default function NotificationCenter() {
                   <div>{n.content}</div>
                   <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>{ago(n.createdAt)}</div>
                 </div>
-                {!n.read && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--primary,#4f46e5)", flexShrink: 0, marginTop: 5 }} />}
+                {!n.read && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--primary,#0d9488)", flexShrink: 0, marginTop: 5 }} />}
               </div>
             ))}
           </div>

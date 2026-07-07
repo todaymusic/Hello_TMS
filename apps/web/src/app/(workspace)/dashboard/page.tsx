@@ -2,36 +2,32 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  api,
-  type ProjectListItem,
-  type Task,
-  type User,
-} from "@/lib/api";
+import { api, type Task, type User } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import ReviewModal from "../activity/ReviewModal";
+import DeletionLog from "@/components/DeletionLog";
 
 // 업무 대분류 (category) — 대시보드는 롱/쇼츠만(프로젝트는 프로젝트 탭에서)
 const CATEGORIES = [
-  { key: "long", ic: "⏳", label: "롱", desc: "긴 업무" },
-  { key: "shorts", ic: "⚡", label: "쇼츠", desc: "짧은 업무" },
+  { key: "long", ic: "⏳", label: "Long 롱", desc: "긴 업무" },
+  { key: "shorts", ic: "⚡", label: "Shorts 쇼츠", desc: "짧은 업무" },
 ] as const;
 
 const SUBCATS = ["디자인", "개발", "마케팅", "기획", "지점업무", "교육", "운영", "인사·총무"];
 
 const PRIOS = [
-  { key: "urgent", label: "긴급" },
-  { key: "high", label: "높음" },
-  { key: "medium", label: "보통" },
-  { key: "low", label: "낮음" },
+  { key: "urgent", label: "Urgent 긴급" },
+  { key: "high", label: "High 높음" },
+  { key: "medium", label: "Medium 보통" },
+  { key: "low", label: "Low 낮음" },
 ] as const;
 
 const PRI_TAG: Record<string, { bg: string; fg: string; label: string }> = {
-  urgent: { bg: "#fee2e2", fg: "#b91c1c", label: "긴급" },
-  high: { bg: "#ffedd5", fg: "#c2410c", label: "높음" },
-  medium: { bg: "#e0e7ff", fg: "#4338ca", label: "보통" },
-  low: { bg: "#f1f5f9", fg: "#64748b", label: "낮음" },
+  urgent: { bg: "#fee2e2", fg: "#b91c1c", label: "Urgent 긴급" },
+  high: { bg: "#ffedd5", fg: "#c2410c", label: "High 높음" },
+  medium: { bg: "#e0e7ff", fg: "#4338ca", label: "Medium 보통" },
+  low: { bg: "#f1f5f9", fg: "#64748b", label: "Low 낮음" },
 };
 
 const DEFAULT_AI_PROMPT = `당신은 업무 정의 어시스턴트입니다. 아래 간략 메모를 바탕으로 담당자가 바로 이해하고 착수할 수 있는 업무설명 문서를 작성하세요.
@@ -48,24 +44,24 @@ function duration(t: Task) {
   const ms = new Date(t.endedAt).getTime() - new Date(t.startedAt).getTime();
   const h = Math.floor(ms / 3600000);
   const d = Math.floor(h / 24);
-  if (d >= 1) return `${d}일 ${h % 24}시간`;
+  if (d >= 1) return `${d}d ${h % 24}h`;
   const m = Math.floor(ms / 60000);
-  return h >= 1 ? `${h}시간` : `${m}분`;
+  return h >= 1 ? `${h}h` : `${m}m`;
 }
 function deadlineDiff(t: Task): { txt: string; color: string } {
   if (!t.dueDate || !t.endedAt) return { txt: "—", color: "var(--text-3)" };
   const days = Math.ceil((new Date(t.endedAt).getTime() - new Date(t.dueDate).getTime()) / 86400000);
-  if (days > 0) return { txt: `+${days}일 초과`, color: "#dc2626" };
-  if (days < 0) return { txt: `${-days}일 단축`, color: "#16a34a" };
-  return { txt: "정시", color: "#16a34a" };
+  if (days > 0) return { txt: `+${days}d over 초과`, color: "#dc2626" };
+  if (days < 0) return { txt: `${-days}d early 단축`, color: "#16a34a" };
+  return { txt: "On time 정시", color: "#16a34a" };
 }
 function statusLabel(t: Task) {
-  if (t.status === "done") return "완료";
-  if (t.status === "completed_pending") return "검수대기";
-  if (t.status === "rejected") return "미수락";
-  if (t.status === "doing") return "진행중";
-  if (t.status === "paused") return "중단";
-  return "대기";
+  if (t.status === "done") return "Done 완료";
+  if (t.status === "completed_pending") return "Review 검수대기";
+  if (t.status === "rejected") return "Rejected 미수락";
+  if (t.status === "doing") return "In progress 진행중";
+  if (t.status === "paused") return "Paused 중단";
+  return "Pending 대기";
 }
 function ymKey(s?: string | null) {
   if (!s) return "";
@@ -76,7 +72,6 @@ function ymKey(s?: string | null) {
 function DashboardInner() {
   const [users, setUsers] = useState<User[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
@@ -89,7 +84,6 @@ function DashboardInner() {
   const [assigneeId, setAssigneeId] = useState<string>(""); // "" = 미지정(풀에 쌓기)
   const [title, setTitle] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>("");
-  const [projectId, setProjectId] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [aiPrompt, setAiPrompt] = useState<string>(DEFAULT_AI_PROMPT);
   const [showPrompt, setShowPrompt] = useState<boolean>(false);
@@ -120,16 +114,14 @@ function DashboardInner() {
     setLoading(true);
     setLoadErr(null);
     try {
-      const [u, t, p] = await Promise.all([
+      const [u, t] = await Promise.all([
         api.get<User[]>("/users"),
         api.get<Task[]>("/tasks"),
-        api.get<ProjectListItem[]>("/projects"),
       ]);
       setUsers(u);
       setTasks(t);
-      setProjects(p);
     } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "불러오기 실패");
+      setLoadErr(e instanceof Error ? e.message : "Failed to load 불러오기 실패");
     } finally {
       setLoading(false);
     }
@@ -141,8 +133,8 @@ function DashboardInner() {
   }, []);
 
   const outputHint = [
-    needReport ? "보고 형식 안내 (예: 주차별 진행률 포함)" : null,
-    needVideo ? "영상에 담을 항목 (예: 결과 시연 / 코드 설명)" : null,
+    needReport ? "Report format guide (e.g., include weekly progress) 보고 형식 안내 (예: 주차별 진행률 포함)" : null,
+    needVideo ? "Video contents (e.g., result demo / code walkthrough) 영상에 담을 항목 (예: 결과 시연 / 코드 설명)" : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -190,7 +182,7 @@ function DashboardInner() {
 
   async function generateDoc() {
     if (!description.trim()) {
-      setSubmitMsg("AI 정리할 상세 설명(메모)을 먼저 입력하세요");
+      setSubmitMsg("Enter a memo for AI to organize first AI 정리할 상세 설명(메모)을 먼저 입력하세요");
       return;
     }
     setAiBusy(true);
@@ -204,7 +196,7 @@ function DashboardInner() {
       });
       setAiDoc(r.doc);
     } catch (e) {
-      setAiDoc(`(생성 실패: ${e instanceof Error ? e.message : "오류"})`);
+      setAiDoc(`(Generation failed 생성 실패: ${e instanceof Error ? e.message : "Error 오류"})`);
     } finally {
       setAiBusy(false);
     }
@@ -233,7 +225,7 @@ function DashboardInner() {
   // 업무 생성 — 담당자 없으면 풀에 쌓임(assigneeId 미전송)
   async function submitTask() {
     if (!title.trim()) {
-      setSubmitMsg("제목을 입력하세요");
+      setSubmitMsg("Enter a title 제목을 입력하세요");
       return;
     }
     setSubmitting(true);
@@ -248,14 +240,13 @@ function DashboardInner() {
         videoRequired: needVideo,
         assigneeId: assigneeId || undefined,
         assignerId: me?.id,
-        projectId: projectId || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         description: description.trim() || undefined,
         descriptionPrompt: aiPrompt.trim() || undefined,
         aiDescriptionDoc: aiDoc.trim() || undefined,
         estimateMinutes: estimate?.minutes,
       });
-      setSubmitMsg(assigneeId ? "✅ 담당자에게 부여했습니다" : "✅ 업무 풀에 쌓았습니다 (담당자 나중에 지정)");
+      setSubmitMsg(assigneeId ? "✅ Assigned to owner 담당자에게 부여했습니다" : "✅ Added to task pool 업무 풀에 쌓았습니다 (담당자 나중에 지정)");
       setTitle("");
       setDescription("");
       setAiDoc("");
@@ -263,7 +254,7 @@ function DashboardInner() {
       setEstimatedText("");
       await load();
     } catch (e) {
-      setSubmitMsg(e instanceof Error ? e.message : "생성 실패");
+      setSubmitMsg(e instanceof Error ? e.message : "Failed to create 생성 실패");
     } finally {
       setSubmitting(false);
     }
@@ -276,18 +267,25 @@ function DashboardInner() {
       await api.patch(`/tasks/${taskId}`, { assigneeId: userId });
       await load();
     } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "담당자 지정 실패");
+      setLoadErr(e instanceof Error ? e.message : "Failed to assign owner 담당자 지정 실패");
     } finally {
       setBusyId(null);
     }
   }
   async function delPool(taskId: string) {
+    // 공유 DB라 삭제는 실제 TMS 데이터까지 영구 제거됨 — 되돌릴 수 없어 확인받는다.
+    if (
+      !window.confirm(
+        "Delete this task permanently? This also removes it from the shared TMS data and cannot be undone.\n이 업무를 영구 삭제할까요? 공유 TMS 데이터에서도 사라지며 되돌릴 수 없습니다.",
+      )
+    )
+      return;
     setBusyId(taskId);
     try {
-      await api.del(`/tasks/${taskId}`);
+      await api.del(`/tasks/${taskId}?userId=${me?.id ?? ""}`);
       await load();
     } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "삭제 실패");
+      setLoadErr(e instanceof Error ? e.message : "Failed to delete 삭제 실패");
     } finally {
       setBusyId(null);
     }
@@ -298,7 +296,7 @@ function DashboardInner() {
       await api.post(`/tasks/${taskId}/request-again`, {});
       await load();
     } catch (e) {
-      setLoadErr(e instanceof Error ? e.message : "재요청 실패");
+      setLoadErr(e instanceof Error ? e.message : "Failed to request again 재요청 실패");
     } finally {
       setBusyId(null);
     }
@@ -322,8 +320,8 @@ function DashboardInner() {
           <div className="sub">Task Pool · assign to owners 업무를 쌓아두고 담당자에게 배분 · 미지정은 풀에 대기</div>
         </div>
         <div className="topbar-right">
-          <div className="avatar" style={{ background: me?.avatarColor ?? "#4f46e5" }}>
-            {me ? me.name.slice(0, 1) : "나"}
+          <div className="avatar" style={{ background: me?.avatarColor ?? "#0d9488" }}>
+            {me ? me.name.slice(0, 1) : "Me 나"}
           </div>
         </div>
       </div>
@@ -337,7 +335,7 @@ function DashboardInner() {
           {/* 좌: 업무 풀 (미배정 | 배정 탭) */}
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ display: "flex", gap: 6, padding: "10px 12px 0", borderBottom: "1px solid var(--border)" }}>
-              {([["unassigned", `미배정 ${pool.length}`], ["assigned", `배정 ${assigned.length}`]] as const).map(([k, label]) => (
+              {([["unassigned", `Unassigned 미배정 ${pool.length}`], ["assigned", `Assigned 배정 ${assigned.length}`]] as const).map(([k, label]) => (
                 <button
                   key={k}
                   onClick={() => setTab(k)}
@@ -357,10 +355,10 @@ function DashboardInner() {
             {tab === "unassigned" ? (
               <>
                 <div style={{ padding: "12px 14px 14px", display: "grid", gap: 6 }}>
-                  {loading && <div style={{ color: "var(--text-3)", fontSize: 13 }}>불러오는 중…</div>}
+                  {loading && <div style={{ color: "var(--text-3)", fontSize: 13 }}>Loading… 불러오는 중…</div>}
                   {!loading && pool.length === 0 && (
                     <div style={{ color: "var(--text-3)", fontSize: 13 }}>
-                      담당자 미지정 업무가 없어요. 오른쪽에서 <b>담당자 미지정</b>으로 만들면 여기 쌓입니다.
+                      No unassigned tasks yet. Create one as unassigned on the right and it stacks here. 담당자 미지정 업무가 없어요. 오른쪽에서 <b>담당자 미지정</b>으로 만들면 여기 쌓입니다.
                     </div>
                   )}
                   {pool.map((t) => (
@@ -372,15 +370,15 @@ function DashboardInner() {
                       {t.subCategory && <span className="pill gray" style={{ fontSize: 10 }}>{t.subCategory}</span>}
                       <span
                         onClick={() => setDetailId(t.id)}
-                        title="업무 상세 보기"
+                        title="View task details 업무 상세 보기"
                         style={{ flex: 1, minWidth: 120, fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
                       >
                         {t.project && <span style={{ color: "var(--text-3)", fontSize: 11.5, fontWeight: 400 }}>({t.project.name}) </span>}
                         {t.title}
                       </span>
                       {me && (
-                        <button className="btn sm" onClick={() => assignPool(t.id, me.id)} disabled={busyId === t.id} title="나에게 담기 → 내 활동으로">
-                          🙋 나에게
+                        <button className="btn sm" onClick={() => assignPool(t.id, me.id)} disabled={busyId === t.id} title="Take to my activity 나에게 담기 → 내 활동으로">
+                          🙋 To me 나에게
                         </button>
                       )}
                       <select
@@ -390,51 +388,51 @@ function DashboardInner() {
                         disabled={busyId === t.id}
                         style={{ width: 120, fontSize: 12 }}
                       >
-                        <option value="">담당자 지정…</option>
+                        <option value="">Assign owner… 담당자 지정…</option>
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>{u.name}</option>
                         ))}
                       </select>
                       {canDelete(t) && (
-                        <button className="btn sm" style={{ color: "#dc2626" }} onClick={() => delPool(t.id)} disabled={busyId === t.id} title="삭제">🗑</button>
+                        <button className="btn sm" style={{ color: "#dc2626" }} onClick={() => delPool(t.id)} disabled={busyId === t.id} title="Delete 삭제">🗑</button>
                       )}
                     </div>
                   ))}
                 </div>
                 <div className="hint" style={{ padding: "0 14px 14px" }}>
-                  🙋 나에게 = 내 활동으로 이동 · 담당자 지정 = 그 사람의 "요청받은 업무"로
+                  🙋 To me = move to my activity · Assign owner = to that person's requested tasks 나에게 = 내 활동으로 이동 · 담당자 지정 = 그 사람의 "요청받은 업무"로
                 </div>
               </>
             ) : (
               <>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: "var(--text-3)" }}>담당자</span>
+                  <span style={{ fontSize: 12, color: "var(--text-3)" }}>Assignee 담당자</span>
                   <select className="inp" value={who} onChange={(e) => setWho(e.target.value)} style={{ width: 130, fontSize: 12 }}>
-                    <option value="all">전체</option>
+                    <option value="all">All 전체</option>
                     {assignees.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
-                  <span style={{ fontSize: 12, color: "var(--text-3)" }}>월(완료 기준)</span>
+                  <span style={{ fontSize: 12, color: "var(--text-3)" }}>Month (by completion) 월(완료 기준)</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <button className="btn sm" onClick={() => shiftMonth(-1)} title="이전 달">◀</button>
+                    <button className="btn sm" onClick={() => shiftMonth(-1)} title="Previous month 이전 달">◀</button>
                     <b style={{ minWidth: 62, textAlign: "center", fontSize: 12.5 }}>
-                      {month === "all" ? "전체" : `${month.slice(0, 4)}.${Number(month.slice(5))}`}
+                      {month === "all" ? "All 전체" : `${month.slice(0, 4)}.${Number(month.slice(5))}`}
                     </b>
-                    <button className="btn sm" onClick={() => shiftMonth(1)} title="다음 달">▶</button>
-                    <button className={`btn sm${month === "all" ? " primary" : ""}`} style={{ marginLeft: 2 }} onClick={() => setMonth("all")}>전체</button>
+                    <button className="btn sm" onClick={() => shiftMonth(1)} title="Next month 다음 달">▶</button>
+                    <button className={`btn sm${month === "all" ? " primary" : ""}`} style={{ marginLeft: 2 }} onClick={() => setMonth("all")}>All 전체</button>
                   </div>
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-2)" }}>총 {assignedRows.length}건</span>
+                  <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-2)" }}>Total 총 {assignedRows.length}건</span>
                 </div>
                 {summary && (
                   <div style={{ margin: "0 14px 12px", padding: 14, background: "var(--surface-2,#fafafa)", border: "1px solid var(--border)", borderRadius: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>📊 {personName}님 종합 ({month === "all" ? "전체" : month})</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>📊 {personName}님 Summary 종합 ({month === "all" ? "All 전체" : month})</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8 }}>
                       {[
-                        ["요청", `${summary.total}건`],
-                        ["완료", `${summary.done}건`],
-                        ["마감 준수율", summary.onTimeRate == null ? "—" : `${summary.onTimeRate}%`],
-                        ["평균 소요", `${summary.avgH}시간`],
-                        ["평균 재작업", `${summary.avgRework}회`],
-                        ["등급", `우수 ${summary.g.우수}·양호 ${summary.g.양호}·보완 ${summary.g.보완}`],
+                        ["Requested 요청", `${summary.total}건`],
+                        ["Done 완료", `${summary.done}건`],
+                        ["On-time 마감 준수율", summary.onTimeRate == null ? "—" : `${summary.onTimeRate}%`],
+                        ["Avg time 평균 소요", `${summary.avgH}h`],
+                        ["Avg rework 평균 재작업", `${summary.avgRework}회`],
+                        ["Grade 등급", `우수 ${summary.g.우수}·양호 ${summary.g.양호}·보완 ${summary.g.보완}`],
                       ].map(([k, v]) => (
                         <div key={k} style={{ background: "var(--surface,#fff)", borderRadius: 8, padding: "8px 10px" }}>
                           <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{k}</div>
@@ -448,14 +446,14 @@ function DashboardInner() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left", color: "var(--text-3)", fontSize: 11 }}>
-                        {["업무", "담당자", "상태", "요청일", "수락일", "미수락 사유", "소요", "완료일", "마감대비", "재작업", "등급", ""].map((hd, i) => (
+                        {["Task 업무", "Assignee 담당자", "Status 상태", "Requested 요청일", "Accepted 수락일", "Reject reason 미수락 사유", "Duration 소요", "Completed 완료일", "vs Deadline 마감대비", "Rework 재작업", "Grade 등급", ""].map((hd, i) => (
                           <th key={i} style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>{hd}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {assignedRows.length === 0 && (
-                        <tr><td colSpan={12} style={{ padding: 20, color: "var(--text-3)", textAlign: "center" }}>배정된 업무가 없어요.</td></tr>
+                        <tr><td colSpan={12} style={{ padding: 20, color: "var(--text-3)", textAlign: "center" }}>No assigned tasks. 배정된 업무가 없어요.</td></tr>
                       )}
                       {assignedRows.map((t) => {
                         const dd = deadlineDiff(t);
@@ -486,11 +484,11 @@ function DashboardInner() {
                             <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
                               {isRejected && canManage ? (
                                 <span style={{ display: "flex", gap: 4 }}>
-                                  <button className="btn sm" style={{ color: "#4338ca", borderColor: "#c7d2fe" }} onClick={() => requestAgain(t.id)} disabled={busyId === t.id} title="다시 수락 요청">↻ 재요청</button>
-                                  <button className="btn sm" style={{ color: "#dc2626" }} onClick={() => delPool(t.id)} disabled={busyId === t.id} title="업무 취소(삭제)">🗑</button>
+                                  <button className="btn sm" style={{ color: "#4338ca", borderColor: "#c7d2fe" }} onClick={() => requestAgain(t.id)} disabled={busyId === t.id} title="Request accept again 다시 수락 요청">↻ Re-request 재요청</button>
+                                  <button className="btn sm" style={{ color: "#dc2626" }} onClick={() => delPool(t.id)} disabled={busyId === t.id} title="Cancel task (delete) 업무 취소(삭제)">🗑</button>
                                 </span>
                               ) : isCompleted && canManage ? (
-                                <button className="btn primary sm" onClick={() => setReviewTask(t)} disabled={busyId === t.id} title="완료 검수 · AI 평가 · 등급">{t.grade ? "🔁 재검수" : "🔍 검수"}</button>
+                                <button className="btn primary sm" onClick={() => setReviewTask(t)} disabled={busyId === t.id} title="Review · AI evaluation · grade 완료 검수 · AI 평가 · 등급">{t.grade ? "🔁 Re-review 재검수" : "🔍 Review 검수"}</button>
                               ) : (
                                 "—"
                               )}
@@ -509,14 +507,14 @@ function DashboardInner() {
           <div className="dash-right">
             <div className="card">
               <div className="panel-head">
-                <div className="sec-title"><span className="em">➕</span> 업무 추가</div>
+                <div className="sec-title"><span className="em">➕</span> Add Task 업무 추가</div>
               </div>
 
               {/* 제목 + 우선순위 */}
               <div className="assign-field">
-                <label>제목 · 우선순위</label>
+                <label>Title · Priority 제목 · 우선순위</label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <input className="inp" style={{ flex: 1 }} placeholder="예: 6월 신메뉴 포스터 디자인" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <input className="inp" style={{ flex: 1 }} placeholder="e.g., June new-menu poster design 예: 6월 신메뉴 포스터 디자인" value={title} onChange={(e) => setTitle(e.target.value)} />
                   <select className="inp" style={{ width: 100, flexShrink: 0 }} value={prio} onChange={(e) => setPrio(e.target.value)}>
                     {PRIOS.map((p) => (
                       <option key={p.key} value={p.key}>{p.label}</option>
@@ -527,7 +525,7 @@ function DashboardInner() {
 
               {/* 대분류 */}
               <div className="assign-field">
-                <label>대분류</label>
+                <label>Category 대분류</label>
                 <div className="cat-row">
                   {CATEGORIES.map((c) => (
                     <div key={c.key} className={`cat${category === c.key ? " on" : ""}`} onClick={() => setCategory(c.key)}>
@@ -539,7 +537,7 @@ function DashboardInner() {
 
               {/* 소분류 */}
               <div className="assign-field">
-                <label>소분류 (업무 영역)</label>
+                <label>Subcategory (work area) 소분류 (업무 영역)</label>
                 <div className="chips">
                   {SUBCATS.map((s) => (
                     <span key={s} className={`chip${subcat === s ? " on" : ""}`} onClick={() => setSubcat(s)}>{s}</span>
@@ -549,22 +547,22 @@ function DashboardInner() {
 
               {/* 산출물 요구 */}
               <div className="assign-field">
-                <label>산출물 요구</label>
+                <label>Deliverables 산출물 요구</label>
                 <div className="chk-row">
                   <label className="chk">
-                    <input type="checkbox" checked={needReport} onChange={(e) => setNeedReport(e.target.checked)} /> 📊 보고링크
+                    <input type="checkbox" checked={needReport} onChange={(e) => setNeedReport(e.target.checked)} /> 📊 Report link 보고링크
                   </label>
                   <label className="chk">
-                    <input type="checkbox" checked={needVideo} onChange={(e) => setNeedVideo(e.target.checked)} /> 🎥 설명영상
+                    <input type="checkbox" checked={needVideo} onChange={(e) => setNeedVideo(e.target.checked)} /> 🎥 Explainer video 설명영상
                   </label>
                 </div>
               </div>
 
               {/* 담당자 */}
               <div className="assign-field">
-                <label>담당자 <span style={{ color: "var(--text-3)", fontWeight: 400 }}>(미지정 시 풀에 쌓임)</span></label>
+                <label>Assignee 담당자 <span style={{ color: "var(--text-3)", fontWeight: 400 }}>(unassigned goes to pool 미지정 시 풀에 쌓임)</span></label>
                 <div className="chips">
-                  <span className={`chip${assigneeId === "" ? " on" : ""}`} onClick={() => setAssigneeId("")}>미지정(풀)</span>
+                  <span className={`chip${assigneeId === "" ? " on" : ""}`} onClick={() => setAssigneeId("")}>Unassigned (pool) 미지정(풀)</span>
                   {users.map((u) => (
                     <span key={u.id} className={`chip${assigneeId === u.id ? " on" : ""}`} onClick={() => setAssigneeId(u.id)}>{u.name}</span>
                   ))}
@@ -573,10 +571,10 @@ function DashboardInner() {
 
               {/* 상세 설명 + AI 예상 소요시간 자동 측정 */}
               <div className="assign-field">
-                <label>상세 설명</label>
+                <label>Details 상세 설명</label>
                 <textarea
                   className="inp"
-                  placeholder="업무 내용을 적으면 AI가 예상 소요시간을 자동 측정해줘요 (요약본도 만들 수 있어요)"
+                  placeholder="Write the task and AI auto-estimates the duration (can also make a summary) 업무 내용을 적으면 AI가 예상 소요시간을 자동 측정해줘요 (요약본도 만들 수 있어요)"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   onBlur={() => void estimateDuration()}
@@ -584,25 +582,25 @@ function DashboardInner() {
                 />
                 {outputHint && <div className="field-hint">💡 {outputHint}</div>}
                 {estimating ? (
-                  <div className="field-hint">⏱ 예상 소요시간 측정 중…</div>
+                  <div className="field-hint">⏱ Estimating duration… 예상 소요시간 측정 중…</div>
                 ) : estimate ? (
                   <div className="field-hint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span>⏱ 예상 소요시간 <b style={{ color: "var(--text-1)" }}>{estimate.label}</b></span>
-                    <button type="button" className="btn sm" style={{ padding: "2px 8px" }} onClick={() => void estimateDuration(true)}>다시 측정</button>
+                    <span>⏱ Est. duration 예상 소요시간 <b style={{ color: "var(--text-1)" }}>{estimate.label}</b></span>
+                    <button type="button" className="btn sm" style={{ padding: "2px 8px" }} onClick={() => void estimateDuration(true)}>Re-estimate 다시 측정</button>
                     <span style={{ flexBasis: "100%", color: "var(--text-3)" }}>{estimate.rationale}</span>
                   </div>
                 ) : description.trim() ? (
-                  <button type="button" className="btn sm" style={{ marginTop: 6 }} onClick={() => void estimateDuration(true)}>⏱ 소요시간 측정</button>
+                  <button type="button" className="btn sm" style={{ marginTop: 6 }} onClick={() => void estimateDuration(true)}>⏱ Estimate duration 소요시간 측정</button>
                 ) : null}
               </div>
 
               {/* 마감기한 + 업무설명 요약본 링크 */}
               <div className="assign-field">
-                <label>마감기한 · 업무설명 요약본</label>
+                <label>Due date · Task summary 마감기한 · 업무설명 요약본</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input className="inp" type="date" style={{ flex: 1 }} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-                  <button type="button" className="btn sm" style={{ flexShrink: 0 }} onClick={() => setDocOpen(true)} title="AI 업무설명 요약본 작성·확인">
-                    📄 요약본{aiDoc.trim() ? " ✓" : ""}
+                  <button type="button" className="btn sm" style={{ flexShrink: 0 }} onClick={() => setDocOpen(true)} title="Write/view AI task summary AI 업무설명 요약본 작성·확인">
+                    📄 Summary 요약본{aiDoc.trim() ? " ✓" : ""}
                   </button>
                 </div>
               </div>
@@ -613,11 +611,14 @@ function DashboardInner() {
 
               {/* 완료 */}
               <button className="btn primary" style={{ width: "100%", marginTop: 4 }} onClick={submitTask} disabled={submitting}>
-                {submitting ? "처리 중…" : assigneeId ? "완료 · 담당자에게 배정" : "완료 · 업무풀에 쌓기"}
+                {submitting ? "Processing… 처리 중…" : assigneeId ? "Done · Assign to owner 완료 · 담당자에게 배정" : "Done · Add to pool 완료 · 업무풀에 쌓기"}
               </button>
             </div>
           </div>
         </div>
+
+        {/* 관리자 삭제 기록 + 복구 */}
+        <DeletionLog onRestored={load} />
       </div>
 
       {detailId && (
@@ -643,16 +644,16 @@ function DashboardInner() {
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "grid", placeItems: "center", zIndex: 60, padding: 20 }}
         >
           <div onClick={(e) => e.stopPropagation()} className="card" style={{ width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "auto", padding: 22 }}>
-            <div className="sec-title mb16"><span className="em">📄</span> 업무설명 요약본</div>
+            <div className="sec-title mb16"><span className="em">📄</span> Task Summary 업무설명 요약본</div>
             <div className="field-hint" style={{ marginBottom: 10 }}>
-              상세 설명을 AI가 정돈된 업무설명 문서로 만들어줍니다. 직접 수정·추가도 가능해요.
+              AI turns your details into a clean task-description doc. You can also edit/add directly. 상세 설명을 AI가 정돈된 업무설명 문서로 만들어줍니다. 직접 수정·추가도 가능해요.
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <button type="button" className="btn" onClick={generateDoc} disabled={aiBusy}>
-                {aiBusy ? "생성 중…" : "🤖 AI 요약본 생성"}
+                {aiBusy ? "Generating… 생성 중…" : "🤖 Generate AI summary AI 요약본 생성"}
               </button>
               <button type="button" className="btn sm" style={{ marginLeft: "auto" }} onClick={() => setShowPrompt((s) => !s)}>
-                {showPrompt ? "프롬프트 숨기기" : "프롬프트 수정"}
+                {showPrompt ? "Hide prompt 프롬프트 숨기기" : "Edit prompt 프롬프트 수정"}
               </button>
             </div>
             {showPrompt && (
@@ -662,10 +663,10 @@ function DashboardInner() {
               className="inp"
               value={aiDoc}
               onChange={(e) => setAiDoc(e.target.value)}
-              placeholder="AI로 생성하거나 직접 작성·추가하세요"
+              placeholder="Generate with AI or write/add yourself AI로 생성하거나 직접 작성·추가하세요"
               style={{ minHeight: 240 }}
             />
-            <button className="btn primary" style={{ width: "100%", marginTop: 12 }} onClick={() => setDocOpen(false)}>확인</button>
+            <button className="btn primary" style={{ width: "100%", marginTop: 12 }} onClick={() => setDocOpen(false)}>Confirm 확인</button>
           </div>
         </div>
       )}

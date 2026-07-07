@@ -62,29 +62,29 @@ export default function TaskDocModal({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div className="sec-title">
-          <span className="em">🤖</span> 업무설명 doc — {title}
+          <span className="em">🤖</span> Task description doc 업무설명 doc — {title}
         </div>
         <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          {saved && <span style={{ color: "#16a34a", fontSize: 13 }}>✅ 저장됨</span>}
+          {saved && <span style={{ color: "#16a34a", fontSize: 13 }}>✅ Saved 저장됨</span>}
           {!readOnly && (
             <button className="btn primary" onClick={save} disabled={busy || loading}>
-              {busy ? "저장 중…" : "저장"}
+              {busy ? "Saving… 저장 중…" : "Save 저장"}
             </button>
           )}
           <button className="btn" onClick={onClose}>
-            닫기
+            Close 닫기
           </button>
         </span>
       </div>
       {loading ? (
-        <div style={{ color: "var(--text-3)", fontSize: 13 }}>불러오는 중…</div>
+        <div style={{ color: "var(--text-3)", fontSize: 13 }}>Loading… 불러오는 중…</div>
       ) : (
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, minHeight: 0 }}>
           <textarea
             value={doc}
             onChange={(e) => setDoc(e.target.value)}
             disabled={readOnly}
-            placeholder="업무설명 doc (마크다운). 자유롭게 수정하세요."
+            placeholder="Task description doc (markdown). Edit freely. 업무설명 doc (마크다운). 자유롭게 수정하세요."
             style={{
               width: "100%",
               height: "100%",
@@ -109,7 +109,7 @@ export default function TaskDocModal({
               lineHeight: 1.8,
             }}
           >
-            {doc || <span style={{ color: "var(--text-3)" }}>미리보기</span>}
+            {doc || <span style={{ color: "var(--text-3)" }}>Preview 미리보기</span>}
           </div>
         </div>
       )}

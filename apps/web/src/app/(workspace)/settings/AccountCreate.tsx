@@ -22,18 +22,23 @@ export default function AccountCreate() {
     setMsg(null);
     try {
       // 1) 유저 생성 — 비관리자(내 활동만 사용)
-      await api.post("/users", {
+      const created = await api.post<{ id: string }>("/users", {
         name: name.trim(),
         email: email.trim(),
         dept: dept.trim() || undefined,
         role: role.trim() || undefined,
         isAdmin: false,
       });
-      // 2) 초기 비밀번호 설정
-      await api.post("/auth/set-password", {
-        email: email.trim(),
-        password: INIT_PW,
-      });
+      // 2) 초기 비밀번호 설정 — 실패하면 방금 만든 계정을 롤백(로그인 불가한 유령 계정 방지)
+      try {
+        await api.post("/auth/set-password", {
+          email: email.trim(),
+          password: INIT_PW,
+        });
+      } catch (pwErr) {
+        await api.del(`/users/${created.id}`).catch(() => {});
+        throw pwErr;
+      }
       setMsg({
         ok: true,
         text: `Created 생성 완료 — ${email.trim()} · 초기 비번 ${INIT_PW}`,
@@ -100,8 +105,8 @@ export default function AccountCreate() {
         </div>
       </div>
       <div style={{ fontSize: 12, color: "var(--text-3)", margin: "10px 0" }}>
-        생성 계정은 <b>내 활동만</b> 사용 가능(비관리자) · 초기 비밀번호{" "}
-        <b>{INIT_PW}</b> (Members can use My Activity only)
+        Members use <b>My Activity only</b> (non-admin) · initial password{" "}
+        <b>{INIT_PW}</b> · 생성 계정은 내 활동만 사용 가능(비관리자) · 초기 비밀번호
       </div>
       {msg && (
         <div

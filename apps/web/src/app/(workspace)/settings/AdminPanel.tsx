@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { api, type Leave, type LeaveType, type User } from "@/lib/api";
 
 const LEAVE_LABEL: Record<LeaveType, string> = {
-  annual: "연차",
-  half: "반차",
-  quarter: "반반차",
-  sick: "병가",
-  etc: "기타",
+  annual: "Annual 연차",
+  half: "Half 반차",
+  quarter: "Quarter 반반차",
+  sick: "Sick 병가",
+  etc: "Etc 기타",
 };
-const STATUS_KO = { requested: "신청됨", approved: "승인", rejected: "반려" } as const;
+const STATUS_KO = { requested: "Requested 신청됨", approved: "Approved 승인", rejected: "Rejected 반려" } as const;
 
 type LeaveWithUser = Leave & { user: { id: string; name: string; avatarColor: string } };
 type Edit = { dept: string; role: string; bal: string };
@@ -109,7 +109,7 @@ export default function AdminPanel() {
       {/* 멤버 관리 */}
       <div className="card" style={{ padding: 22 }}>
         <div className="sec-title mb16">
-          <span className="em">🧑‍💼</span> 멤버 관리 (직책 · 담당업무 · 연차잔여)
+          <span className="em">🧑‍💼</span> Members 멤버 관리 (Role · Task · Leave left 직책 · 담당업무 · 연차잔여)
         </div>
         <div style={{ display: "grid", gap: 12 }}>
           {users.map((u) => (
@@ -119,19 +119,19 @@ export default function AdminPanel() {
                   {u.name.slice(0, 1)}
                 </div>
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{u.name}</span>
-                {u.isAdmin && <span className="pill teal">관리자</span>}
+                {u.isAdmin && <span className="pill teal">Admin 관리자</span>}
               </div>
               <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                 <input
                   className="inp"
-                  placeholder="담당업무"
+                  placeholder="Task 담당업무"
                   value={edits[u.id]?.dept ?? ""}
                   onChange={(e) => upd(u.id, { dept: e.target.value })}
                   style={{ flex: 1, minWidth: 0, padding: "6px 8px" }}
                 />
                 <input
                   className="inp"
-                  placeholder="직책"
+                  placeholder="Role 직책"
                   value={edits[u.id]?.role ?? ""}
                   onChange={(e) => upd(u.id, { role: e.target.value })}
                   style={{ flex: 1, minWidth: 0, padding: "6px 8px" }}
@@ -140,7 +140,7 @@ export default function AdminPanel() {
                   className="inp"
                   type="number"
                   step="0.25"
-                  title="연차 잔여(일)"
+                  title="Leave left (days) 연차 잔여(일)"
                   value={edits[u.id]?.bal ?? "0"}
                   onChange={(e) => upd(u.id, { bal: e.target.value })}
                   style={{ width: 52, padding: "6px 6px", flexShrink: 0 }}
@@ -151,7 +151,7 @@ export default function AdminPanel() {
                   onClick={() => saveMember(u.id)}
                   disabled={busy === u.id}
                 >
-                  저장
+                  Save 저장
                 </button>
               </div>
             </div>
@@ -162,11 +162,11 @@ export default function AdminPanel() {
       {/* 전 멤버 휴가 */}
       <div className="card" style={{ padding: 22 }}>
         <div className="sec-title mb16">
-          <span className="em">🗂️</span> 전 멤버 휴가 (승인/반려)
+          <span className="em">🗂️</span> All Members' Leave 전 멤버 휴가 (Approve/Reject 승인/반려)
         </div>
         <div style={{ display: "grid", gap: 8 }}>
           {visibleLeaves.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>최근 3개월 내 휴가가 없습니다.</div>
+            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No leave in the last 3 months. 최근 3개월 내 휴가가 없습니다.</div>
           )}
           {visibleLeaves.map((lv) => (
             <div
@@ -202,23 +202,23 @@ export default function AdminPanel() {
                 {lv.status === "requested" && (
                   <>
                     <button className="btn sm" onClick={() => setLeaveStatus(lv.id, "approved")} disabled={busy === lv.id}>
-                      승인
+                      Approve 승인
                     </button>
                     <button className="btn sm" onClick={() => setLeaveStatus(lv.id, "rejected")} disabled={busy === lv.id}>
-                      반려
+                      Reject 반려
                     </button>
                   </>
                 )}
                 {lv.cancelRequested && (
                   <>
                     <span className="pill" style={{ background: "#fef9c3", color: "#a16207" }}>
-                      취소요청
+                      Cancel requested 취소요청
                     </span>
                     <button className="btn sm" onClick={() => confirmCancel(lv.id)} disabled={busy === lv.id}>
-                      취소 승인
+                      Approve Cancel 취소 승인
                     </button>
                     <button className="btn sm" onClick={() => denyCancel(lv.id)} disabled={busy === lv.id}>
-                      거절
+                      Deny 거절
                     </button>
                   </>
                 )}
@@ -227,7 +227,7 @@ export default function AdminPanel() {
           ))}
         </div>
         <div className="hint" style={{ marginTop: 10 }}>
-          승인 시 연차 −1 / 반차 −0.5 / 반반차 −0.25 자동 차감됩니다.
+          On approval, auto-deducted: Annual −1 / Half −0.5 / Quarter −0.25. 승인 시 연차 −1 / 반차 −0.5 / 반반차 −0.25 자동 차감됩니다.
         </div>
       </div>
     </div>
