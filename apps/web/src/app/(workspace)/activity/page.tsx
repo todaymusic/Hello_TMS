@@ -565,6 +565,10 @@ function ActivityInner() {
   const recvBacklog = fromOthers.filter(
     (t) => stateOf(t) !== "done" && (!t.acceptedAt || !todayIds.has(t.id)),
   );
+  // 요청받은 업무 상태별 그룹 (수락 대기 / 수락함 / 미수락)
+  const reqPending = recvBacklog.filter((t) => !t.acceptedAt && t.status !== "rejected");
+  const reqAccepted = recvBacklog.filter((t) => !!t.acceptedAt);
+  const reqRejected = recvBacklog.filter((t) => t.status === "rejected");
   // 업무 리스트에서 오늘의 업무로 드래그&드롭
   async function dropToToday() {
     const id = listDragId;
@@ -1023,84 +1027,81 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
                 }}
               >
 
-                {/* 📥 요청받은 업무 */}
+                {/* 📥 요청받은 업무 (상태별 그룹) */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <div className="sec-title" style={{ fontSize: 14 }}><span className="em">📥</span> Requests 요청받은 업무</div>
                     <span className="count" style={{ marginLeft: "auto" }}>{recvBacklog.length}</span>
                   </div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    {recvBacklog.length === 0 && (
-                      <div style={{ color: "var(--text-3)", fontSize: 13 }}>None 없음</div>
-                    )}
-                    {recvBacklog.map((t) => {
-                      const accepted = !!t.acceptedAt;
-                      return (
-                        <div
-                          key={t.id}
-                          draggable={isSelf && accepted}
-                          onDragStart={(e) => { if (isSelf && accepted) { setListDragId(t.id); e.dataTransfer.effectAllowed = "move"; } }}
-                          onDragEnd={() => setListDragId(null)}
-                          style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: "7px 8px", border: `1px solid ${t.reworkCount ? "#fb923c" : "var(--border)"}`, borderRadius: 8, flexWrap: "wrap", background: t.reworkCount ? "#fff7ed" : (listDragId === t.id ? "var(--primary-soft,#eef0fe)" : undefined), cursor: isSelf && accepted ? "grab" : "default" }}
-                          title={isSelf && accepted ? "Drag to Today's Tasks 드래그해서 오늘의 업무로" : ""}
-                        >
-                          {isSelf && accepted && <span style={{ color: "var(--text-3)", fontSize: 14, userSelect: "none" }}>⠿</span>}
-                          <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
-                          {t.reworkCount ? (
-                            <span className="pill" style={{ background: "#c2410c", color: "#fff", fontSize: 10, fontWeight: 700 }}>Rework 재작업 #{t.reworkCount}</span>
-                          ) : null}
-                          <span style={{ flex: 1, minWidth: 80, cursor: "pointer" }} onClick={() => setDetailId(t.id)}>
-                            {t.project && <span style={{ color: "var(--text-3)", fontSize: 11.5 }}>({t.project.name}) </span>}
-                            {t.title}
-                          </span>
-                          <span style={{ fontSize: 11, color: "var(--text-3)" }} title="Requester · date 요청자 · 요청일">
-                            {t.assigner?.name} · {mdd(t.createdAt)}
-                          </span>
-                          {t.status === "rejected" ? (
-                            <span className="pill" style={{ background: "#fee2e2", color: "#b91c1c", fontSize: 10, fontWeight: 700 }}>Rejected · re-request 미수락 · 재요청 대기</span>
-                          ) : !accepted ? (
-                            isSelf ? (
-                              <span style={{ display: "flex", gap: 4 }}>
-                                <button className="btn primary sm" onClick={() => accept(t.id)} disabled={busy === t.id}>Accept 수락</button>
-                                <button className="btn sm" style={{ color: "#b91c1c", borderColor: "#f0c9c9" }} onClick={() => { setRejectId(t.id); setRejectText(""); }} disabled={busy === t.id}>Reject 미수락</button>
-                              </span>
-                            ) : (
-                              <span className="pill" style={{ background: "#fef9c3", color: "#a16207", fontSize: 10 }}>Pending 수락대기</span>
-                            )
-                          ) : (
-                            <>
-                              <span className="pill gray" style={{ fontSize: 10 }}>{stLabel(t)}</span>
-                            </>
-                          )}
+                  {recvBacklog.length === 0 && (
+                    <div style={{ color: "var(--text-3)", fontSize: 13 }}>None 없음</div>
+                  )}
+
+                  {/* ⏳ 수락 대기 */}
+                  {reqPending.length > 0 && (
+                    <div style={{ display: "grid", gap: 6, marginBottom: reqAccepted.length || reqRejected.length ? 12 : 0 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#a16207" }}>⏳ Pending 수락 대기 · {reqPending.length}</div>
+                      {reqPending.map((t) => (
+                        <div key={t.id} style={{ border: "1px solid #fde68a", background: "#fffbeb", borderRadius: 8, padding: "8px 10px", display: "grid", gap: 5 }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
+                            {t.reworkCount ? <span className="pill" style={{ background: "#c2410c", color: "#fff", fontSize: 10, fontWeight: 700 }}>Rework #{t.reworkCount}</span> : null}
+                            <span style={{ flex: 1, minWidth: 0, cursor: "pointer", fontWeight: 600 }} onClick={() => setDetailId(t.id)}>
+                              {t.project && <span style={{ color: "var(--text-3)", fontSize: 11.5 }}>({t.project.name}) </span>}{t.title}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t.assigner?.name} · {mdd(t.createdAt)}</div>
                           {rejectId === t.id ? (
-                            <div style={{ flexBasis: "100%", display: "flex", gap: 6, alignItems: "center", paddingTop: 4 }}>
-                              <input
-                                className="inp"
-                                autoFocus
-                                value={rejectText}
-                                onChange={(e) => setRejectText(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter" && rejectText.trim()) void reject(t.id, rejectText); }}
-                                placeholder="Reject reason 미수락 사유 (부여자에게 전달)"
-                                style={{ flex: 1, fontSize: 12.5 }}
-                              />
-                              <button className="btn sm" style={{ color: "#fff", background: "#b91c1c", borderColor: "#b91c1c" }} onClick={() => reject(t.id, rejectText)} disabled={busy === t.id || !rejectText.trim()}>Confirm 미수락 확정</button>
-                              <button className="btn sm" onClick={() => { setRejectId(null); setRejectText(""); }} disabled={busy === t.id}>Cancel 취소</button>
+                            <div style={{ display: "grid", gap: 6 }}>
+                              <input className="inp" autoFocus value={rejectText} onChange={(e) => setRejectText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && rejectText.trim()) void reject(t.id, rejectText); }} placeholder="Reject reason 미수락 사유 (부여자에게 전달)" style={{ fontSize: 12.5 }} />
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button className="btn sm" style={{ flex: 1, color: "#fff", background: "#b91c1c", borderColor: "#b91c1c" }} onClick={() => reject(t.id, rejectText)} disabled={busy === t.id || !rejectText.trim()}>Confirm 확정</button>
+                                <button className="btn sm" onClick={() => { setRejectId(null); setRejectText(""); }} disabled={busy === t.id}>Cancel 취소</button>
+                              </div>
                             </div>
-                          ) : null}
-                          {t.status === "rejected" && t.rejectReason ? (
-                            <div style={{ flexBasis: "100%", fontSize: 11.5, color: "#b91c1c", paddingLeft: 2 }}>
-                              🚫 Reject reason 미수락 사유: {t.rejectReason}
-                            </div>
-                          ) : null}
-                          {t.reworkCount && t.reworkReason ? (
-                            <div style={{ flexBasis: "100%", fontSize: 11.5, color: "#c2410c", paddingLeft: 2 }}>
-                              🔁 Rework reason 재작업 사유: {t.reworkReason}
+                          ) : isSelf ? (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button className="btn primary sm" style={{ flex: 1 }} onClick={() => accept(t.id)} disabled={busy === t.id}>✓ Accept 수락</button>
+                              <button className="btn sm" style={{ flex: 1, color: "#b91c1c", borderColor: "#f0c9c9" }} onClick={() => { setRejectId(t.id); setRejectText(""); }} disabled={busy === t.id}>✕ Reject 미수락</button>
                             </div>
                           ) : null}
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ▶ 수락함 */}
+                  {reqAccepted.length > 0 && (
+                    <div style={{ display: "grid", gap: 6, marginBottom: reqRejected.length ? 12 : 0 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#2563eb" }}>▶ Accepted 수락함 · {reqAccepted.length}</div>
+                      {reqAccepted.map((t) => (
+                        <div key={t.id} draggable={isSelf} onDragStart={(e) => { if (isSelf) { setListDragId(t.id); e.dataTransfer.effectAllowed = "move"; } }} onDragEnd={() => setListDragId(null)} title={isSelf ? "Drag to Today's Tasks 드래그해서 오늘의 업무로" : ""} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, padding: "7px 8px", border: `1px solid ${t.reworkCount ? "#fb923c" : "var(--border)"}`, borderRadius: 8, background: t.reworkCount ? "#fff7ed" : (listDragId === t.id ? "var(--primary-soft,#eef0fe)" : undefined), cursor: isSelf ? "grab" : "default", flexWrap: "wrap" }}>
+                          {isSelf && <span style={{ color: "var(--text-3)", fontSize: 14 }}>⠿</span>}
+                          <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
+                          {t.reworkCount ? <span className="pill" style={{ background: "#c2410c", color: "#fff", fontSize: 10, fontWeight: 700 }}>Rework #{t.reworkCount}</span> : null}
+                          <span style={{ flex: 1, minWidth: 60, cursor: "pointer" }} onClick={() => setDetailId(t.id)}>{t.title}</span>
+                          <span className="pill gray" style={{ fontSize: 10 }}>{stLabel(t)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 🚫 미수락·재요청 */}
+                  {reqRejected.length > 0 && (
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#b91c1c" }}>🚫 Rejected 미수락 · {reqRejected.length}</div>
+                      {reqRejected.map((t) => (
+                        <div key={t.id} style={{ fontSize: 12.5, padding: "6px 8px", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-2)", display: "grid", gap: 3 }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className="pill" style={{ background: PRI[t.priority].bg, color: PRI[t.priority].fg, fontSize: 10 }}>{PRI[t.priority].label}</span>
+                            <span style={{ flex: 1, cursor: "pointer" }} onClick={() => setDetailId(t.id)}>{t.title}</span>
+                            <span style={{ fontSize: 10, color: "#b91c1c", fontWeight: 700 }}>재요청 대기 re-req</span>
+                          </div>
+                          {t.rejectReason && <div style={{ fontSize: 11, color: "#b91c1c", paddingLeft: 2 }}>🚫 {t.rejectReason}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
