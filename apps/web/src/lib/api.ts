@@ -106,6 +106,7 @@ export type Task = {
   reworkCount?: number;
   reworkReason?: string | null;
   pauseReason?: string | null;
+  pausedAt?: string | null;
   estimateMinutes?: number | null;
   grade?: string | null;
   aiReview?: string | null;
@@ -126,12 +127,20 @@ export type Task = {
 };
 
 // 업무 상세(GET /tasks/:id) — 전체 필드
+export type WorkLog = {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  note: string | null;
+};
+
 export type TaskDetail = Task & {
   description: string | null;
   descriptionPrompt: string | null;
   aiDescriptionDoc: string | null;
   startedAt: string | null;
   endedAt: string | null;
+  workLogs?: WorkLog[];
 };
 
 // ───────── 채팅 ─────────

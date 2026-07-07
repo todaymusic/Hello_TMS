@@ -366,58 +366,36 @@ export default function TaskDetailModal({
 
             {hasTimeline && (
               <div className="assign-field">
-                <label>🕒 업무 타임라인</label>
-                <div style={{ display: "grid", gap: 5, fontSize: 12.5, background: "var(--surface-2,#fafafa)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px" }}>
+                <label>🕒 Timeline 업무 타임라인</label>
+                {/* 컴팩트: 세션당 한 줄(시작~종료 · 구분 · 소요) + 사유/메모는 아래 한 줄 */}
+                <div style={{ display: "grid", gap: 3, fontSize: 12, background: "var(--surface-2,#fafafa)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 11px" }}>
                   {task.acceptedAt && (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <span>📥</span><span style={{ flex: 1 }}>수락</span>
-                      <span style={{ color: "var(--text-3)" }}>{hm(task.acceptedAt)}</span>
-                    </div>
+                    <div style={{ color: "var(--text-3)" }}>📥 Accepted 수락 · {hm(task.acceptedAt)}</div>
                   )}
                   {sessions.length === 0 && !task.acceptedAt && (
-                    <div style={{ color: "var(--text-3)" }}>아직 시작 기록이 없어요.</div>
+                    <div style={{ color: "var(--text-3)" }}>No record yet 아직 시작 기록이 없어요.</div>
                   )}
                   {sessions.map((s, i) => {
-                    const next = sessions[i + 1];
                     const dur = (s.endedAt ? new Date(s.endedAt).getTime() : Date.now()) - new Date(s.startedAt).getTime();
                     const isLastDone = i === sessions.length - 1 && !!task.endedAt && !!s.endedAt;
-                    const endLabel = !s.endedAt ? "진행 중" : isLastDone ? "종료" : "중단";
-                    const gap = next && s.endedAt ? new Date(next.startedAt).getTime() - new Date(s.endedAt).getTime() : 0;
+                    const label = !s.endedAt ? "doing 진행중" : isLastDone ? "end 종료" : "pause 중단";
                     return (
-                      <div key={s.id} style={{ display: "grid", gap: 3 }}>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span>▶</span>
-                          <span style={{ flex: 1 }}>시작{sessions.length > 1 ? ` #${i + 1}` : ""}</span>
-                          <span style={{ color: "var(--text-3)" }}>{hm(s.startedAt)}</span>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, color: s.endedAt ? undefined : "#2563eb" }}>
-                          <span>{s.endedAt ? "⏹" : "…"}</span>
-                          <span style={{ flex: 1 }}>
-                            {endLabel} <span style={{ color: "var(--text-3)" }}>· 소요 {fmtDur(dur)}</span>
-                          </span>
-                          <span style={{ color: "var(--text-3)" }}>{s.endedAt ? hm(s.endedAt) : ""}</span>
+                      <div key={s.id} style={{ display: "grid", gap: 1 }}>
+                        <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 700 }}>▶ {hm(s.startedAt)}{s.endedAt ? ` ~ ${hm(s.endedAt)}` : " ~ …"}</span>
+                          <span style={{ color: "var(--text-3)" }}>· {label} · {fmtDur(dur)}</span>
                         </div>
                         {s.note && (
-                          <div style={{ display: "flex", gap: 8, color: "var(--text-2)", paddingLeft: 4, whiteSpace: "pre-wrap" }}>
-                            <span>📝</span><span style={{ flex: 1 }}>완료 메모: {s.note}</span>
-                          </div>
-                        )}
-                        {next && gap > 0 && (
-                          <div style={{ display: "flex", gap: 8, color: "#a16207", paddingLeft: 4 }}>
-                            <span>⏳</span><span style={{ flex: 1 }}>{fmtDur(gap)} 만에 재개</span>
-                          </div>
+                          <div style={{ color: "#a16207", paddingLeft: 14, whiteSpace: "pre-wrap" }}>{s.note}</div>
                         )}
                       </div>
                     );
                   })}
                   {task.endedAt && (
-                    <div style={{ display: "flex", gap: 8, fontWeight: 700, color: "#16a34a" }}>
-                      <span>✅</span><span style={{ flex: 1 }}>완료</span><span>{hm(task.endedAt)}</span>
-                    </div>
+                    <div style={{ fontWeight: 700, color: "#16a34a" }}>✅ Done 완료 · {hm(task.endedAt)}</div>
                   )}
-                  <div style={{ display: "flex", gap: 8, borderTop: "1px dashed var(--border)", paddingTop: 6, marginTop: 2, fontWeight: 700 }}>
-                    <span>Σ</span><span style={{ flex: 1 }}>총 실작업 시간</span>
-                    <span>{fmtDur(totalMs)} · {sessions.length}회</span>
+                  <div style={{ borderTop: "1px dashed var(--border)", paddingTop: 5, marginTop: 1, fontWeight: 700 }}>
+                    Σ Total 총 {fmtDur(totalMs)} · {sessions.length}회
                   </div>
                 </div>
               </div>

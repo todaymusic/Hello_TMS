@@ -35,6 +35,12 @@ function mdd(s?: string | null) {
   const d = new Date(s);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
+// 시각 HH:MM (컴팩트 타임로그용)
+function hm(s?: string | null) {
+  if (!s) return "";
+  const d = new Date(s);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 const LEAVE_KO: Record<string, string> = {
   annual: "Annual 연차",
@@ -911,8 +917,10 @@ function ActivityInner() {
                               ✓ Done 완료
                             </button>
                           )}
-                          {it.pauseReason && (
-                            <span style={{ flexBasis: "100%", fontSize: 11.5, color: "#a16207", paddingLeft: 2 }}>⏸ Reason 사유: {it.pauseReason}</span>
+                          {(it.pausedAt || it.pauseReason) && (
+                            <span style={{ flexBasis: "100%", fontSize: 11.5, color: "#a16207", paddingLeft: 2 }}>
+                              ⏸ {it.pausedAt ? hm(it.pausedAt) : ""}{it.pauseReason ? ` · ${it.pauseReason}` : ""}
+                            </span>
                           )}
                         </>
                       )}

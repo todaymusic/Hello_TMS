@@ -230,6 +230,7 @@ export class TasksService {
           status: TaskStatus.doing,
           startedAt: task.startedAt ?? now,
           pauseReason: null,
+          pausedAt: null,
         },
         include: taskInclude,
       }),
@@ -315,13 +316,14 @@ export class TasksService {
   async pause(id: string, reason?: string) {
     await this.findOne(id);
     const now = new Date();
+    const r = reason?.trim();
     await this.prisma.workLog.updateMany({
       where: { taskId: id, endedAt: null },
-      data: { endedAt: now },
+      data: { endedAt: now, ...(r ? { note: `⏸ ${r}` } : {}) },
     });
     return this.prisma.task.update({
       where: { id },
-      data: { status: TaskStatus.paused, pauseReason: reason?.trim() || null },
+      data: { status: TaskStatus.paused, pauseReason: r || null, pausedAt: now },
       include: taskInclude,
     });
   }
@@ -337,7 +339,7 @@ export class TasksService {
     const [updated] = await this.prisma.$transaction([
       this.prisma.task.update({
         where: { id },
-        data: { status: TaskStatus.doing, pauseReason: null },
+        data: { status: TaskStatus.doing, pauseReason: null, pausedAt: null },
         include: taskInclude,
       }),
       this.prisma.workLog.create({
@@ -382,6 +384,7 @@ export class TasksService {
         endedAt: now,
         progress: 100,
         pauseReason: null,
+        pausedAt: null,
         ...(dto.reportLink !== undefined ? { reportLink: dto.reportLink } : {}),
         ...(dto.videoLink !== undefined ? { videoLink: dto.videoLink } : {}),
       },
