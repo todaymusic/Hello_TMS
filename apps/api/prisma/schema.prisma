@@ -227,6 +227,7 @@ model Task {
   statusMemo        String? // 진행 메모(전 직원 대시보드 공유)
   reworkCount       Int     @default(0) // 재작업 횟수(#2,#3...)
   reworkReason      String? // 최근 재작업 사유
+  pauseReason       String? // 일시정지(중단) 사유 — hellotms에서 입력, 재개/시작/종료 시 해제
   estimateMinutes   Int?    // AI 예상 소요시간(분) — 상세설명 기반 자동 측정
   grade             String? // 검수 등급: 우수/양호/보완
   aiReview          String? // AI 완료 평가(캐시)

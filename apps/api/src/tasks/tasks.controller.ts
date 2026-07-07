@@ -88,8 +88,8 @@ export class TasksController {
 
   // 잠시 중단 / 재개 (세션 시간 기록)
   @Post(':id/pause')
-  pause(@Param('id') id: string) {
-    return this.tasks.pause(id);
+  pause(@Param('id') id: string, @Body() body: { reason?: string }) {
+    return this.tasks.pause(id, body?.reason);
   }
 
   @Post(':id/resume')

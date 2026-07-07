@@ -95,6 +95,9 @@ function ActivityInner() {
   const [endVideo, setEndVideo] = useState("");
   const [endNote, setEndNote] = useState("");
   const [endBusy, setEndBusy] = useState(false);
+  // 일시정지 사유 입력 모달
+  const [pauseFor, setPauseFor] = useState<{ id: string; title: string } | null>(null);
+  const [pauseReasonText, setPauseReasonText] = useState("");
   // 날짜 이동(어제/오늘/내일) · 상세 모달 · 퇴근 알림
   const [dayOffset, setDayOffset] = useState(0);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -320,10 +323,10 @@ function ActivityInner() {
       setBusy(null);
     }
   }
-  async function pause(id: string) {
+  async function pause(id: string, reason?: string) {
     setBusy(id);
     try {
-      await api.post(`/tasks/${id}/pause`, {});
+      await api.post(`/tasks/${id}/pause`, { reason: reason?.trim() || undefined });
       await load();
     } finally {
       setBusy(null);
@@ -619,7 +622,7 @@ function ActivityInner() {
           )}
           {isSelf && (
             <>
-              <button className="btn sm" onClick={(e) => { e.stopPropagation(); pause(t.id); }} disabled={busy === t.id}>⏸ Pause 일시정지</button>
+              <button className="btn sm" onClick={(e) => { e.stopPropagation(); setPauseReasonText(""); setPauseFor({ id: t.id, title: t.title }); }} disabled={busy === t.id}>⏸ Pause 일시정지</button>
               <button className="btn primary sm" onClick={(e) => { e.stopPropagation(); openEnd(t); }} disabled={busy === t.id}>✓ Done 완료</button>
             </>
           )}
@@ -908,6 +911,9 @@ function ActivityInner() {
                               ✓ Done 완료
                             </button>
                           )}
+                          {it.pauseReason && (
+                            <span style={{ flexBasis: "100%", fontSize: 11.5, color: "#a16207", paddingLeft: 2 }}>⏸ Reason 사유: {it.pauseReason}</span>
+                          )}
                         </>
                       )}
                     </div>
@@ -1082,6 +1088,44 @@ Task List 업무 리스트에서 <b>드래그 drag</b>해 담기 · 손잡이(�
           </div>
         </div>
       </div>
+
+      {pauseFor && (
+        <div
+          onClick={() => busy !== pauseFor.id && setPauseFor(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "grid", placeItems: "center", zIndex: 50, padding: 20 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="card" style={{ width: "100%", maxWidth: 440, padding: 22 }}>
+            <div className="sec-title mb16"><span className="em">⏸</span> Pause 일시정지 — {pauseFor.title}</div>
+            <div className="assign-field">
+              <label>Reason 사유 (선택)</label>
+              <textarea
+                className="inp"
+                value={pauseReasonText}
+                onChange={(e) => setPauseReasonText(e.target.value)}
+                placeholder="Why are you pausing? 일시정지 사유 (예: 자료 대기 / 우선순위 변경)"
+                rows={4}
+                autoFocus
+                style={{ minHeight: 90, resize: "vertical", lineHeight: 1.6 }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <button className="btn" style={{ flex: 1 }} onClick={() => busy !== pauseFor.id && setPauseFor(null)} disabled={busy === pauseFor.id}>Cancel 취소</button>
+              <button
+                className="btn primary"
+                style={{ flex: 2 }}
+                disabled={busy === pauseFor.id}
+                onClick={async () => {
+                  const id = pauseFor.id;
+                  setPauseFor(null);
+                  await pause(id, pauseReasonText);
+                }}
+              >
+                {busy === pauseFor.id ? "Pausing… 처리 중…" : "⏸ Pause 일시정지"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {endTask && (
         <div

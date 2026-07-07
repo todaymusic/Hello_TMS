@@ -229,6 +229,7 @@ export class TasksService {
         data: {
           status: TaskStatus.doing,
           startedAt: task.startedAt ?? now,
+          pauseReason: null,
         },
         include: taskInclude,
       }),
@@ -311,7 +312,7 @@ export class TasksService {
   /**
    * 업무 중단 — 잠시 멈춤. 열린 WorkLog 닫고 status=paused (시간 기록 남김).
    */
-  async pause(id: string) {
+  async pause(id: string, reason?: string) {
     await this.findOne(id);
     const now = new Date();
     await this.prisma.workLog.updateMany({
@@ -320,7 +321,7 @@ export class TasksService {
     });
     return this.prisma.task.update({
       where: { id },
-      data: { status: TaskStatus.paused },
+      data: { status: TaskStatus.paused, pauseReason: reason?.trim() || null },
       include: taskInclude,
     });
   }
@@ -336,7 +337,7 @@ export class TasksService {
     const [updated] = await this.prisma.$transaction([
       this.prisma.task.update({
         where: { id },
-        data: { status: TaskStatus.doing },
+        data: { status: TaskStatus.doing, pauseReason: null },
         include: taskInclude,
       }),
       this.prisma.workLog.create({
@@ -380,6 +381,7 @@ export class TasksService {
         status: needsReview ? TaskStatus.completed_pending : TaskStatus.done,
         endedAt: now,
         progress: 100,
+        pauseReason: null,
         ...(dto.reportLink !== undefined ? { reportLink: dto.reportLink } : {}),
         ...(dto.videoLink !== undefined ? { videoLink: dto.videoLink } : {}),
       },

@@ -105,6 +105,7 @@ export type Task = {
   statusMemo: string | null;
   reworkCount?: number;
   reworkReason?: string | null;
+  pauseReason?: string | null;
   estimateMinutes?: number | null;
   grade?: string | null;
   aiReview?: string | null;
