@@ -5,31 +5,31 @@ import { api, type Priority, type TaskDetail, type TaskStatus } from "@/lib/api"
 import { useAuth } from "@/lib/auth";
 
 const PRI_LABEL: Record<Priority, string> = {
-  urgent: "긴급",
-  high: "높음",
-  medium: "보통",
-  low: "낮음",
+  urgent: "Urgent 긴급",
+  high: "High 높음",
+  medium: "Medium 보통",
+  low: "Low 낮음",
 };
 const STATUS_LABEL: Record<TaskStatus, string> = {
-  todo: "할일",
-  doing: "진행중",
-  paused: "중단",
-  review: "검토중",
-  done: "완료",
-  completed_pending: "완료(검수대기)",
-  rejected: "미수락(반려)",
+  todo: "Todo 할일",
+  doing: "Doing 진행중",
+  paused: "Paused 중단",
+  review: "Review 검토중",
+  done: "Done 완료",
+  completed_pending: "Pending review 완료(검수대기)",
+  rejected: "Rejected 미수락(반려)",
 };
-const CAT_LABEL: Record<string, string> = { long: "롱", shorts: "쇼츠", project: "프로젝트" };
+const CAT_LABEL: Record<string, string> = { long: "Long 롱", shorts: "Shorts 쇼츠", project: "Project 프로젝트" };
 
 type WorkLog = { id: string; startedAt: string; endedAt: string | null; note?: string | null };
 
 function fmtDur(ms: number): string {
   const min = Math.round(ms / 60000);
-  if (min < 1) return "1분 미만";
-  if (min < 60) return `${min}분`;
+  if (min < 1) return "<1m";
+  if (min < 60) return `${min}m`;
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return m ? `${h}시간 ${m}분` : `${h}시간`;
+  return m ? `${h}h ${m}m` : `${h}h`;
 }
 function hm(s: string): string {
   const d = new Date(s);
@@ -185,10 +185,11 @@ export default function TaskDetailModal({
     0,
   );
   const hasTimeline = sessions.length > 0 || !!task?.acceptedAt || !!task?.startedAt;
-  // 완료 시 남긴 완료 메모(WorkLog.note) — 가장 최근 것
+  // 완료 시 남긴 완료 메모(WorkLog.note) — 가장 최근 것.
+  // 일시정지 사유(⏸ 로 시작)는 완료메모가 아니므로 제외.
   const completionNote =
     [...logs]
-      .filter((l) => l.note && l.note.trim())
+      .filter((l) => l.note && l.note.trim() && !l.note.trim().startsWith("⏸"))
       .sort(
         (a, b) =>
           new Date(b.endedAt ?? b.startedAt).getTime() - new Date(a.endedAt ?? a.startedAt).getTime(),
@@ -203,15 +204,15 @@ export default function TaskDetailModal({
     if (isDone && task.endedAt) {
       const end = new Date(task.endedAt); end.setHours(0, 0, 0, 0);
       const days = Math.round((end.getTime() - due.getTime()) / dayMs);
-      if (days > 0) return { text: `⚠️ 마감 ${days}일 초과 완료`, color: "#b91c1c", bg: "#fee2e2", bd: "#fecaca" };
-      if (days < 0) return { text: `✅ 마감 ${-days}일 전 완료`, color: "#15803d", bg: "#dcfce7", bd: "#bbf7d0" };
-      return { text: "✅ 정시 완료", color: "#15803d", bg: "#dcfce7", bd: "#bbf7d0" };
+      if (days > 0) return { text: `⚠️ ${days}d late 마감 ${days}일 초과 완료`, color: "#b91c1c", bg: "#fee2e2", bd: "#fecaca" };
+      if (days < 0) return { text: `✅ ${-days}d early 마감 ${-days}일 전 완료`, color: "#15803d", bg: "#dcfce7", bd: "#bbf7d0" };
+      return { text: "✅ On time 정시 완료", color: "#15803d", bg: "#dcfce7", bd: "#bbf7d0" };
     }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const days = Math.round((today.getTime() - due.getTime()) / dayMs);
-    if (days > 0) return { text: `⚠️ 마감 ${days}일 지남 (미완료)`, color: "#b91c1c", bg: "#fee2e2", bd: "#fecaca" };
-    if (days === 0) return { text: "⏳ 오늘 마감", color: "#a16207", bg: "#fef3c7", bd: "#fde68a" };
-    return { text: `🗓 마감까지 ${-days}일`, color: "#a16207", bg: "#fef9c3", bd: "#fde68a" };
+    if (days > 0) return { text: `⚠️ ${days}d overdue 마감 ${days}일 지남`, color: "#b91c1c", bg: "#fee2e2", bd: "#fecaca" };
+    if (days === 0) return { text: "⏳ Due today 오늘 마감", color: "#a16207", bg: "#fef3c7", bd: "#fde68a" };
+    return { text: `🗓 ${-days}d left 마감까지 ${-days}일`, color: "#a16207", bg: "#fef9c3", bd: "#fde68a" };
   })();
 
   return (
@@ -262,12 +263,12 @@ export default function TaskDetailModal({
         style={{ width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "auto", padding: 22 }}
       >
         {!task ? (
-          <div style={{ color: "var(--text-3)", fontSize: 13 }}>{err ?? "불러오는 중…"}</div>
+          <div style={{ color: "var(--text-3)", fontSize: 13 }}>{err ?? "Loading… 불러오는 중…"}</div>
         ) : (
           <>
             <div className="panel-head">
               <div className="sec-title">
-                <span className="em">📋</span> 업무 상세 {ro && <span className="pill gray">읽기 전용</span>}
+                <span className="em">📋</span> Task Detail 업무 상세 {ro && <span className="pill gray">Read-only 읽기 전용</span>}
               </div>
               <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                 <span className="pill gray">{CAT_LABEL[task.category] ?? task.category}</span>
@@ -276,13 +277,13 @@ export default function TaskDetailModal({
             </div>
 
             <div className="assign-field">
-              <label>제목</label>
+              <label>Title 제목</label>
               <input className="inp" value={title} onChange={(e) => setTitle(e.target.value)} disabled={ro} />
             </div>
 
             <div className="assign-field" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               <div>
-                <label>우선순위</label>
+                <label>Priority 우선순위</label>
                 <select className="inp" value={priority} onChange={(e) => setPriority(e.target.value as Priority)} disabled={ro}>
                   {(Object.keys(PRI_LABEL) as Priority[]).map((p) => (
                     <option key={p} value={p}>{PRI_LABEL[p]}</option>
@@ -290,7 +291,7 @@ export default function TaskDetailModal({
                 </select>
               </div>
               <div>
-                <label>상태</label>
+                <label>Status 상태</label>
                 <select className="inp" value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} disabled={ro}>
                   {(["todo", "doing", "paused", "review", "done"] as TaskStatus[]).map((s) => (
                     <option key={s} value={s}>{STATUS_LABEL[s]}</option>
@@ -298,7 +299,7 @@ export default function TaskDetailModal({
                 </select>
               </div>
               <div>
-                <label>마감일</label>
+                <label>Due 마감일</label>
                 <input className="inp" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={ro} />
               </div>
             </div>
@@ -315,7 +316,7 @@ export default function TaskDetailModal({
             )}
 
             <div className="assign-field">
-              <label>진행률 ({progress}%)</label>
+              <label>Progress 진행률 ({progress}%)</label>
               <input
                 type="range"
                 min={0}
@@ -329,19 +330,19 @@ export default function TaskDetailModal({
             </div>
 
             <div className="assign-field">
-              <label>📝 진행 메모 (대시보드 공유)</label>
+              <label>📝 Progress memo 진행 메모 (dashboard-shared 대시보드 공유)</label>
               <input
                 className="inp"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
-                placeholder="예: 초안 80% 완료, 피드백 대기 중"
+                placeholder="e.g. draft 80% done, waiting feedback 예: 초안 80% 완료, 피드백 대기 중"
                 disabled={ro}
               />
             </div>
 
             {completionNote && (
               <div className="assign-field">
-                <label>✅ 완료 메모</label>
+                <label>✅ Done memo 완료 메모</label>
                 <div
                   style={{
                     whiteSpace: "pre-wrap",
@@ -360,8 +361,8 @@ export default function TaskDetailModal({
             )}
 
             <div className="assign-field" style={{ fontSize: 13, color: "var(--text-2)" }}>
-              담당자: <b>{task.assignee?.name ?? "—"}</b>
-              {task.assigner && <> · 부여: {task.assigner.name}</>}
+              Assignee 담당자: <b>{task.assignee?.name ?? "—"}</b>
+              {task.assigner && <> · by 부여: {task.assigner.name}</>}
             </div>
 
             {hasTimeline && (
@@ -403,25 +404,25 @@ export default function TaskDetailModal({
 
             {(task.reportRequired || reportLink) && (
               <div className="assign-field">
-                <label>📊 보고링크</label>
+                <label>📊 Report link 보고링크</label>
                 <input className="inp" value={reportLink} onChange={(e) => setReportLink(e.target.value)} placeholder="https://..." disabled={ro} />
               </div>
             )}
             {(task.videoRequired || videoLink) && (
               <div className="assign-field">
-                <label>🎥 설명영상</label>
+                <label>🎥 Video 설명영상</label>
                 <input className="inp" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} placeholder="https://..." disabled={ro} />
               </div>
             )}
 
             <div className="assign-field">
-              <label>상세 설명 (메모)</label>
+              <label>Description 상세 설명 (메모)</label>
               <textarea className="inp" value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 70 }} disabled={ro} />
             </div>
 
             <div className="assign-field">
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <label style={{ margin: 0 }}>🤖 AI 업무설명 doc</label>
+                <label style={{ margin: 0 }}>🤖 AI Task Doc 업무설명</label>
                 <button
                   type="button"
                   className="btn sm"
@@ -429,11 +430,11 @@ export default function TaskDetailModal({
                   onClick={() => setBigEdit(true)}
                   disabled={ro && !doc.trim()}
                 >
-                  📄 {doc.trim() ? "업무설명 열기" : ro ? "없음" : "업무설명 작성"}
+                  📄 {doc.trim() ? "Open 업무설명 열기" : ro ? "None 없음" : "Write 업무설명 작성"}
                 </button>
                 {!ro && (
                   <button type="button" className="btn sm" onClick={regenerateDoc} disabled={aiBusy}>
-                    {aiBusy ? "생성 중…" : "AI 재생성"}
+                    {aiBusy ? "Generating… 생성 중…" : "Regenerate AI 재생성"}
                   </button>
                 )}
               </div>
@@ -446,7 +447,7 @@ export default function TaskDetailModal({
                 (confirmDel ? (
                   <>
                     <span style={{ fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
-                      삭제할까요?
+                      Delete? 삭제할까요?
                     </span>
                     <button
                       className="btn"
@@ -454,10 +455,10 @@ export default function TaskDetailModal({
                       disabled={busy}
                       style={{ color: "#fff", background: "#dc2626", borderColor: "#dc2626" }}
                     >
-                      {busy ? "삭제 중…" : "삭제"}
+                      {busy ? "Deleting… 삭제 중…" : "Delete 삭제"}
                     </button>
                     <button className="btn" onClick={() => setConfirmDel(false)} disabled={busy}>
-                      취소
+                      Cancel 취소
                     </button>
                   </>
                 ) : (
@@ -465,19 +466,19 @@ export default function TaskDetailModal({
                     className="btn"
                     onClick={() => setConfirmDel(true)}
                     disabled={busy}
-                    title="이 업무를 삭제합니다 (요청한 사람만 가능)"
+                    title="Delete this task (assigner only) 이 업무를 삭제합니다 (요청한 사람만 가능)"
                     style={{ color: "#dc2626", borderColor: "#f0c9c9" }}
                   >
-                    🗑 삭제
+                    🗑 Delete 삭제
                   </button>
                 ))}
               <span style={{ flex: 1 }} />
               <button className="btn" onClick={() => !busy && onClose()}>
-                닫기
+                Close 닫기
               </button>
               {!ro && (
                 <button className="btn primary" onClick={save} disabled={busy}>
-                  {busy ? "저장 중…" : "저장"}
+                  {busy ? "Saving… 저장 중…" : "Save 저장"}
                 </button>
               )}
             </div>
